@@ -29,9 +29,9 @@
                 <h5 class="fw-bold mb-1">{{ $sesi->jadwal->mataKuliah->nama_mk ?? 'Mata Kuliah' }}</h5>
                 <p class="text-muted small mb-3">{{ $sesi->materi ?? 'Perkuliahan Reguler' }}</p>
 
-                <!-- Wadah QR Code -->
-                <div class="bg-light p-4 rounded-4 border d-inline-block mb-3">
-                    <div id="qrcode"></div>
+                <!-- Wadah QR Code Lokal (Tanpa Internet) -->
+                <div class="bg-white p-3 rounded-4 border d-inline-block mb-3 shadow-sm">
+                    <div id="qrcode-container" class="d-flex justify-content-center align-items-center" style="width: 200px; height: 200px;"></div>
                 </div>
 
                 <div class="alert alert-warning py-2 small mb-3">
@@ -116,19 +116,30 @@
 @endsection
 
 @push('scripts')
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 <script>
     const tokenQr = "{{ $sesi->token_qr }}";
     
-    // Generate QR Code otomatis
-    new QRCode(document.getElementById("qrcode"), {
-        text: tokenQr,
-        width: 200,
-        height: 200,
-        colorDark: "#0b2545",
-        colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.H
-    });
+    try {
+        var typeNumber = 0;
+        var errorCorrectionLevel = 'H';
+        var qr = qrcode(typeNumber, errorCorrectionLevel);
+        qr.addData(tokenQr);
+        qr.make();
+        
+        document.getElementById('qrcode-container').innerHTML = qr.createSvgTag({
+            scalable: true,
+            margin: 2
+        });
+        
+        const svgEl = document.querySelector('#qrcode-container svg');
+        if(svgEl) {
+            svgEl.style.width = '200px';
+            svgEl.style.height = '200px';
+        }
+    } catch (e) {
+        document.getElementById('qrcode-container').innerText = 'Token: ' + tokenQr;
+    }
 
     // Auto-refresh halaman setiap 15 detik agar daftar mahasiswa yang hadir ter-update secara real-time
     setTimeout(function() {
