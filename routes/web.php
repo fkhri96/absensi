@@ -24,11 +24,12 @@ use App\Http\Controllers\Admin\PengaturanQrController as AdminPengaturanQrContro
 use App\Http\Controllers\Admin\PengaturanSistemController as AdminPengaturanSistemController;
 
 // Controller Dosen & Mahasiswa
-use App\Http\Controllers\Dosen\AbsensiController as DosenAbsensiController;
-use App\Http\Controllers\Mahasiswa\AbsensiController as MahasiswaAbsensiController;
 use App\Http\Controllers\Dosen\DashboardController as DosenDashboardController;
+use App\Http\Controllers\Dosen\AkademikController as DosenAkademikController;
+use App\Http\Controllers\Dosen\AbsensiController as DosenAbsensiController;
+use App\Http\Controllers\Dosen\LaporanController as DosenLaporanController;
 use App\Http\Controllers\Mahasiswa\DashboardController as MahasiswaDashboardController;
-
+use App\Http\Controllers\Mahasiswa\AbsensiController as MahasiswaAbsensiController;
 /*
 |--------------------------------------------------------------------------
 | Halaman Utama & Autentikasi Multi-Role
@@ -151,21 +152,27 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 | Group Route DOSEN
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'role:dosen'])->prefix('dosen')->name('dosen.')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('dosen.dashboard');
-    })->name('dashboard');
-
-    Route::resource('absensi', DosenAbsensiController::class);
-    Route::patch('absensi/record/{record}', [DosenAbsensiController::class, 'updateStatusMahasiswa'])
-        ->name('absensi.update-status');
-});
-
 /*
 |--------------------------------------------------------------------------
-| Group Route MAHASISWA
+| Group Route DOSEN (10 Modul Lengkap)
 |--------------------------------------------------------------------------
 */
+Route::middleware(['auth', 'role:dosen'])->prefix('dosen')->name('dosen.')->group(function () {
+    Route::get('/dashboard', [DosenDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/matakuliah', [DosenAkademikController::class, 'mataKuliah'])->name('matakuliah.index');
+    Route::get('/matakuliah/{id}', [DosenAkademikController::class, 'detailMataKuliah'])->name('matakuliah.show');
+    Route::get('/jadwal', [DosenAkademikController::class, 'jadwal'])->name('jadwal.index');
+
+    Route::resource('absensi', DosenAbsensiController::class);
+    Route::post('/absensi/{sesi}/koreksi', [DosenAbsensiController::class, 'koreksiPresensi'])->name('absensi.koreksi');
+
+    Route::get('/mahasiswa', [DosenAkademikController::class, 'mahasiswa'])->name('mahasiswa.index');
+    Route::get('/laporan', [DosenLaporanController::class, 'index'])->name('laporan.index');
+    Route::get('/laporan/cetak', [DosenLaporanController::class, 'cetak'])->name('laporan.cetak');
+    Route::get('/laporan/excel', [DosenLaporanController::class, 'exportExcel'])->name('laporan.excel');
+    Route::get('/notifikasi', [DosenDashboardController::class, 'notifikasi'])->name('notifikasi.index');
+});
+
 Route::middleware(['auth', 'role:mahasiswa'])->prefix('mahasiswa')->name('mahasiswa.')->group(function () {
     Route::get('/dashboard', function () {
         return view('mahasiswa.dashboard');

@@ -201,6 +201,24 @@
             font-weight: 500;
         }
 
+        .notif-bell-btn {
+            width: 40px;
+            height: 40px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            color: var(--text);
+            transition: all .18s ease;
+        }
+
+        .notif-bell-btn:hover, .notif-bell-btn.active {
+            background: var(--blue-soft);
+            border-color: var(--blue);
+            color: var(--blue);
+        }
+
         /* User Pill Trigger in Topbar */
         .user-trigger {
             display: inline-flex;
@@ -349,11 +367,13 @@
 
 <body>
 @php
-    $roleKey   = trim(View::yieldContent('role')) ?: (auth()->user()->role ?? 'admin');
-    $roleLabel = ['admin' => 'Administrator', 'dosen' => 'Dosen', 'mahasiswa' => 'Mahasiswa'][$roleKey] ?? 'Pengguna';
-    $authUser  = auth()->user();$userName  = $authUser->name ?? $roleLabel;
-    $userFoto  = !empty($authUser->foto) ? asset('storage/' . $authUser->foto) : null;
-    $profilUrl = Route::has('profile.index') ? route('profile.index') : url('/profil');
+    $roleKey        = trim(View::yieldContent('role')) ?: (auth()->user()->role ?? 'admin');
+    $roleLabel      = ['admin' => 'Administrator', 'dosen' => 'Dosen', 'mahasiswa' => 'Mahasiswa'][$roleKey] ?? 'Pengguna';
+    $authUser       = auth()->user();
+    $userName       = $authUser->name ?? $roleLabel;
+    $userFoto       = !empty($authUser->foto) ? asset('storage/' . $authUser->foto) : null;
+    $canEditProfile = ($roleKey !== 'dosen');
+    $profilUrl      = Route::has('profile.index') ? route('profile.index') : url('/profil');
 @endphp
 
     <!-- Backdrop Mobile -->
@@ -374,24 +394,36 @@
         </div>
 
         <div class="sidebar-footer">
-            <a href="{{ $profilUrl }}" class="sidebar-profile-link mb-2" title="Buka & Edit Profil">
-                @if($userFoto)
-                    <img src="{{ $userFoto }}" alt="Foto {{ $userName }}" class="avatar-img" style="width: 36px; height: 36px;">
-                @else
+            @if($canEditProfile)
+                <a href="{{ $profilUrl }}" class="sidebar-profile-link mb-2" title="Buka & Edit Profil">
+                    @if($userFoto)
+                        <img src="{{ $userFoto }}" alt="Foto {{ $userName }}" class="avatar-img" style="width: 36px; height: 36px;">
+                    @else
+                        <div class="avatar" style="width: 36px; height: 36px; font-size: 0.85rem;">
+                            {{ strtoupper(substr($userName, 0, 1)) }}
+                        </div>
+                    @endif
+                    <div class="overflow-hidden flex-grow-1">
+                        <div class="fw-semibold text-white text-truncate small lh-sm">{{ $userName }}</div>
+                        <div class="text-info d-flex align-items-center gap-1" style="font-size: 0.72rem;">
+                            <span>{{ $roleLabel }}</span>
+                            <span>•</span>
+                            <span class="text-decoration-underline">Edit Profil</span>
+                        </div>
+                    </div>
+                    <i class="bi bi-chevron-right text-white-50 small"></i>
+                </a>
+            @else
+                <div class="d-flex align-items-center gap-2 p-1 mb-2">
                     <div class="avatar" style="width: 36px; height: 36px; font-size: 0.85rem;">
                         {{ strtoupper(substr($userName, 0, 1)) }}
                     </div>
-                @endif
-                <div class="overflow-hidden flex-grow-1">
-                    <div class="fw-semibold text-white text-truncate small lh-sm">{{ $userName }}</div>
-                    <div class="text-info d-flex align-items-center gap-1" style="font-size: 0.72rem;">
-                        <span>{{ $roleLabel }}</span>
-                        <span>•</span>
-                        <span class="text-decoration-underline">Edit Profil</span>
+                    <div class="overflow-hidden">
+                        <div class="fw-semibold text-white text-truncate small lh-sm">{{ $userName }}</div>
+                        <div class="text-white-50" style="font-size: 0.72rem;">{{ $roleLabel }}</div>
                     </div>
                 </div>
-                <i class="bi bi-chevron-right text-white-50 small"></i>
-            </a>
+            @endif
 
             <form action="{{ route('logout') }}" method="POST" onsubmit="return confirm('Yakin ingin keluar dari sistem?')">
                 @csrf
@@ -413,16 +445,24 @@
                 </div>
             </div>
 
-            <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center gap-2 gap-md-3">
                 <span class="date-pill d-none d-md-inline-flex align-items-center gap-2">
                     <i class="bi bi-calendar3 text-primary"></i>
                     {{ now()->translatedFormat('l, d F Y') }}
                 </span>
 
+                @if($roleKey === 'dosen' && Route::has('dosen.notifikasi.index'))
+                    <a href="{{ route('dosen.notifikasi.index') }}"
+                       class="notif-bell-btn position-relative text-decoration-none {{ request()->routeIs('dosen.notifikasi.*') ? 'active' : '' }}"
+                       title="Notifikasi Perkuliahan">
+                        <i class="bi bi-bell fs-6"></i>
+                    </a>
+                @endif
+
                 <!-- Dropdown Profil & Logout -->
                 <div class="dropdown">
-                    <button class="user-trigger" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Menu Akun & Profil">
-                        @if($userFoto)
+                    <button class="user-trigger" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Menu Akun">
+                        @if($userFoto && $canEditProfile)
                             <img src="{{ $userFoto }}" alt="Foto {{ $userName }}" class="avatar-img">
                         @else
                             <div class="avatar">
@@ -441,13 +481,15 @@
                             <div class="fw-bold small text-dark text-truncate">{{ $userName }}</div>
                             <div class="text-muted text-truncate" style="font-size: 0.75rem;">{{ $authUser->email ?? $roleLabel }}</div>
                         </li>
-                        <li>
-                            <a href="{{ $profilUrl }}" class="dropdown-item d-flex align-items-center gap-2 {{ request()->routeIs('profile.*') ? 'active bg-primary text-white' : '' }}">
-                                <i class="bi bi-person-circle {{ request()->routeIs('profile.*') ? 'text-white' : 'text-primary' }}"></i>
-                                <span>Profil & Foto Saya</span>
-                            </a>
-                        </li>
-                        <li><hr class="dropdown-divider my-1"></li>
+                        @if($canEditProfile)
+                            <li>
+                                <a href="{{ $profilUrl }}" class="dropdown-item d-flex align-items-center gap-2 {{ request()->routeIs('profile.*') ? 'active bg-primary text-white' : '' }}">
+                                    <i class="bi bi-person-circle {{ request()->routeIs('profile.*') ? 'text-white' : 'text-primary' }}"></i>
+                                    <span>Profil & Foto Saya</span>
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider my-1"></li>
+                        @endif
                         <li>
                             <form action="{{ route('logout') }}" method="POST" onsubmit="return confirm('Yakin ingin keluar dari sistem?')">
                                 @csrf
