@@ -164,6 +164,7 @@ Route::middleware(['auth', 'role:dosen'])->prefix('dosen')->name('dosen.')->grou
     Route::get('/jadwal', [DosenAkademikController::class, 'jadwal'])->name('jadwal.index');
 
     Route::resource('absensi', DosenAbsensiController::class);
+    Route::patch('absensi/{id}/update-status', [DosenAbsensiController::class, 'updateStatus'])->name('absensi.update-status');
     Route::post('/absensi/{sesi}/koreksi', [DosenAbsensiController::class, 'koreksiPresensi'])->name('absensi.koreksi');
 
     Route::get('/mahasiswa', [DosenAkademikController::class, 'mahasiswa'])->name('mahasiswa.index');
