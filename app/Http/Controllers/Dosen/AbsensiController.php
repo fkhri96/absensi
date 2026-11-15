@@ -12,6 +12,20 @@ use Illuminate\Support\Str;
 
 class AbsensiController extends Controller
 {
+    public function index()
+    {
+        $dosen     = \App\Models\Dosen::where('user_id', auth()->id())->first();
+        $matkulIds = $dosen ? $dosen->mataKuliahs()->pluck('id') : collect();
+        $jadwalIds = \App\Models\Jadwal::whereIn('mata_kuliah_id', $matkulIds)->pluck('id');
+
+        $sesis = \App\Models\SesiAbsensi::with(['jadwal.mataKuliah'])
+            ->withCount('absensis')
+            ->whereIn('jadwal_id', $jadwalIds)
+            ->latest()
+            ->paginate(15);
+
+        return view('dosen.absensi.index', compact('sesis'));
+    }
     public function create(Request $request)
     {
         $dosen     = Dosen::where('user_id', auth()->id())->first();
@@ -65,5 +79,20 @@ class AbsensiController extends Controller
         $sesi->update(['status' => $request->status]); // 'buka' atau 'tutup'
 
         return back()->with('success', 'Status sesi absensi berhasil diperbarui.');
+    }
+    public function destroy($id)
+    {
+        $dosen     = \App\Models\Dosen::where('user_id', auth()->id())->first();
+        $matkulIds = $dosen ? $dosen->mataKuliahs()->pluck('id') : collect();
+        $jadwalIds = \App\Models\Jadwal::whereIn('mata_kuliah_id', $matkulIds)->pluck('id');
+
+        $sesi = \App\Models\SesiAbsensi::whereIn('jadwal_id', $jadwalIds)->findOrFail($id);
+        
+        // Hapus relasi absensi mahasiswa terlebih dahulu jika ada
+        $sesi->absensis()->delete();
+        $sesi->delete();
+
+        return redirect()->route('dosen.absensi.index')
+            ->with('success', 'Sesi QR absensi berhasil dihapus.');
     }
 }

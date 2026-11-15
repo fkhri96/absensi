@@ -14,7 +14,7 @@
     @endif
 
     <div class="row g-4">
-        <!-- Kolom Kiri: Tampilan QR Code Dinamis & Countdown -->
+        <!-- Kolom Kiri: QR Code & Kontrol Sesi -->
         <div class="col-lg-5">
             <div class="panel p-4 shadow-sm text-center">
                 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -39,7 +39,7 @@
                 </div>
 
                 <!-- Tombol Tutup / Buka Sesi -->
-                <form action="{{ route('dosen.absensi.update-status', $sesi->id) }}" method="POST">
+                <form action="{{ route('dosen.absensi.update-status', $sesi->id) }}" method="POST" class="mb-2">
                     @csrf
                     @method('PATCH')
                     @if($sesi->status === 'buka')
@@ -54,10 +54,19 @@
                         </button>
                     @endif
                 </form>
+
+                <!-- Tombol Hapus Sesi -->
+                <form action="{{ route('dosen.absensi.destroy', $sesi->id) }}" method="POST" onsubmit="return confirm('Hapus permanen sesi QR pertemuan ini beserta data kehadirannya?')">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-outline-danger w-100 rounded-3 fw-semibold">
+                        <i class="bi bi-trash me-1"></i> Hapus Sesi QR
+                    </button>
+                </form>
             </div>
         </div>
 
-        <!-- Kolom Kanan: Live Daftar Mahasiswa yang Berhasil Absen -->
+        <!-- Kolom Kanan: Daftar Mahasiswa Hadir Real-time -->
         <div class="col-lg-7">
             <div class="panel p-4 shadow-sm">
                 <div class="d-flex justify-content-between align-items-center mb-3">

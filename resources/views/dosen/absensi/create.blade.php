@@ -15,8 +15,8 @@
                         <i class="bi bi-qr-code-scan fs-4"></i>
                     </span>
                     <div>
-                        <h4 class="fw-bold mb-1">Pengaturan & Pembuatan Sesi QR</h4>
-                        <p class="text-muted small mb-0">Atur parameter kelas dan durasi aktif QR Code sebelum ditampilkan ke mahasiswa.</p>
+                        <h4 class="fw-bold mb-1">Buat Sesi QR Presensi</h4>
+                        <p class="text-muted small mb-0">Pilih mata kuliah, tentukan pertemuan ke-, materi, dan durasi aktif QR Code.</p>
                     </div>
                 </div>
 
@@ -34,9 +34,9 @@
                     @csrf
 
                     <div class="mb-3">
-                        <label for="jadwal_id" class="form-label fw-semibold small">Pilih Mata Kuliah & Jadwal Kelas <span class="text-danger">*</span></label>
+                        <label for="jadwal_id" class="form-label fw-semibold small">Pilih Kelas / Mata Kuliah <span class="text-danger">*</span></label>
                         <select id="jadwal_id" name="jadwal_id" class="form-select @error('jadwal_id') is-invalid @enderror" required>
-                            <option value="">-- Pilih Kelas Perkuliahan --</option>
+                            <option value="">-- Pilih Jadwal Mengajar --</option>
                             @foreach($jadwals as $jadwal)
                                 <option value="{{ $jadwal->id }}" {{ old('jadwal_id') == $jadwal->id ? 'selected' : '' }}>
                                     {{ $jadwal->mataKuliah->nama_mk ?? '-' }} ({{ $jadwal->hari }}, {{ \Carbon\Carbon::parse($jadwal->jam_mulai)->format('H:i') }} - Ruang {{ $jadwal->ruang }})
@@ -64,7 +64,7 @@
                             <input type="number" id="durasi_menit" name="durasi_menit" min="5" max="180"
                                    value="{{ old('durasi_menit', 30) }}"
                                    class="form-control @error('durasi_menit') is-invalid @enderror" required>
-                            <small class="text-muted" style="font-size: 0.75rem;">QR otomatis kedaluwarsa setelah durasi habis.</small>
+                            <small class="text-muted" style="font-size: 0.75rem;">Sesi otomatis kedaluwarsa setelah durasi ini.</small>
                             @error('durasi_menit')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -76,14 +76,14 @@
                         <input type="text" id="materi" name="materi"
                                value="{{ old('materi') }}"
                                class="form-control @error('materi') is-invalid @enderror"
-                               placeholder="Contoh: Pengantar Arsitektur Laravel & Routing">
+                               placeholder="Contoh: Pengantar Controller dan Routing Laravel">
                         @error('materi')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
                     <div class="d-flex justify-content-between align-items-center pt-3 border-top">
-                        <a href="{{ route('dosen.matakuliah.index') }}" class="btn btn-ghost">Batal</a>
+                        <a href="{{ route('dosen.absensi.index') }}" class="btn btn-ghost">Batal</a>
                         <button type="submit" class="btn btn-brand d-inline-flex align-items-center gap-2 px-4">
                             <i class="bi bi-broadcast"></i> Buka Sesi & Tampilkan QR
                         </button>
