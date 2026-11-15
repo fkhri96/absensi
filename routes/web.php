@@ -1,17 +1,16 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Schema;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ProfileController;
 use App\Models\Mahasiswa;
 use App\Models\Dosen;
 use App\Models\MataKuliah;
 use App\Models\Jadwal;
 use App\Models\SesiAbsensi;
 
-
 // Controller Admin (10 Modul)
-use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\MahasiswaController as AdminMahasiswaController;
 use App\Http\Controllers\Admin\DosenController as AdminDosenController;
@@ -67,22 +66,36 @@ Route::get('/login', function () {
 
 Route::middleware('guest')->group(function () {
     // Login Admin
-Route::get('/admin/login', [AuthController::class, 'showAdminLogin'])->name('admin.login');
-Route::post('/admin/login', [AuthController::class, 'loginAdmin'])->name('admin.login.process');
+    Route::get('/admin/login', [AuthController::class, 'showAdminLogin'])->name('admin.login');
+    Route::post('/admin/login', [AuthController::class, 'loginAdmin'])->name('admin.login.process');
 
-// Login Dosen
-Route::get('/dosen/login', [AuthController::class, 'showDosenLogin'])->name('dosen.login');
-Route::post('/dosen/login', [AuthController::class, 'loginDosen'])->name('dosen.login.process');
+    // Login Dosen
+    Route::get('/dosen/login', [AuthController::class, 'showDosenLogin'])->name('dosen.login');
+    Route::post('/dosen/login', [AuthController::class, 'loginDosen'])->name('dosen.login.process');
 
-// Login Mahasiswa
-Route::get('/mahasiswa/login', [AuthController::class, 'showMahasiswaLogin'])->name('mahasiswa.login');
-Route::post('/mahasiswa/login', [AuthController::class, 'loginMahasiswa'])->name('mahasiswa.login.process');
+    // Login Mahasiswa
+    Route::get('/mahasiswa/login', [AuthController::class, 'showMahasiswaLogin'])->name('mahasiswa.login');
+    Route::post('/mahasiswa/login', [AuthController::class, 'loginMahasiswa'])->name('mahasiswa.login.process');
+});
 
 // Logout
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
-});
 
-Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
+/*
+|--------------------------------------------------------------------------
+| Profil & Upload Foto (Admin, Dosen, Mahasiswa)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth'])->group(function () {
+    Route::get('/profil', [ProfileController::class, 'index'])->name('profile.index');
+    Route::put('/profil', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profil/foto', [ProfileController::class, 'destroyFoto'])->name('profile.foto.destroy');
+
+    // Alias URL per role (jika diakses dari menu sidebar masing-masing role)
+    Route::get('/admin/profil', [ProfileController::class, 'index'])->name('admin.profile.index');
+    Route::get('/dosen/profil', [ProfileController::class, 'index'])->name('dosen.profile.index');
+    Route::get('/mahasiswa/profil', [ProfileController::class, 'index'])->name('mahasiswa.profile.index');
+});
 
 /*
 |--------------------------------------------------------------------------
