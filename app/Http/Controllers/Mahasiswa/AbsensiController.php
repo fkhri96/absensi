@@ -7,56 +7,33 @@ use App\Models\Absensi;
 use App\Models\Mahasiswa;
 use App\Models\SesiAbsensi;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
 
 class AbsensiController extends Controller
 {
     public function index()
     {
-        $mahasiswa = Mahasiswa::where('user_id', auth()->id())->first();
-
-        $riwayatAbsensi = $mahasiswa
-            ? Absensi::with(['sesiAbsensi.jadwal.mataKuliah.dosen.user'])
-                ->where('mahasiswa_id', $mahasiswa->id)
-                ->latest()
-                ->paginate(10)
-            : collect();
-
-        return view('mahasiswa.absensi.index', compact('riwayatAbsensi'));
-    }
-
-    public function scan()
-    {
-        return view('mahasiswa.absensi.scan');
+        return view('mahasiswa.absensi.index');
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'kode_qr' => 'required|string',
+        $validated = $request->validate([
+            'token_qr' => 'required|string',
         ]);
 
-        $mahasiswa = Mahasiswa::where('user_id', auth()->id())->first();
+        $user = auth()->user();
+        $mahasiswa = Mahasiswa::where('user_id', $user->id)->first();
+        
         if (!$mahasiswa) {
-            return back()->with('error', 'Data profil mahasiswa tidak ditemukan. Hubungi Admin.');
+            return back()->with('error', 'Data profil mahasiswa tidak ditemukan.');
         }
 
-        $kode = trim($request->kode_qr);
-
-        $sesi = SesiAbsensi::where('status', 'buka')
-            ->where(function ($query) use ($kode) {
-                $query->where('id', $kode);
-                if (Schema::hasColumn('sesi_absensis', 'kode_qr')) {
-                    $query->orWhere('kode_qr', $kode);
-                }
-                if (Schema::hasColumn('sesi_absensis', 'token')) {
-                    $query->orWhere('token', $kode);
-                }
-            })
+        $sesi = SesiAbsensi::where('token_qr', $validated['token_qr'])
+            ->where('status', 'buka')
             ->first();
 
         if (!$sesi) {
-            return back()->with('error', 'Kode QR tidak valid atau sesi absensi sudah ditutup.');
+            return back()->with('error', 'QR Code tidak valid, sudah kedaluwarsa, atau sesi ditutup oleh dosen.');
         }
 
         $sudahAbsen = Absensi::where('sesi_absensi_id', $sesi->id)
@@ -64,9 +41,7 @@ class AbsensiController extends Controller
             ->exists();
 
         if ($sudahAbsen) {
-            return redirect()
-                ->route('mahasiswa.absensi.index')
-                ->with('success', 'Kamu sudah tercatat hadir pada pertemuan ini.');
+            return back()->with('warning', 'Anda sudah tercatat hadir pada sesi perkuliahan ini.');
         }
 
         Absensi::create([
@@ -75,8 +50,45 @@ class AbsensiController extends Controller
             'status'          => 'hadir',
         ]);
 
-        return redirect()
-            ->route('mahasiswa.absensi.index')
-            ->with('success', 'Presensi berhasil dicatat!');
+        return redirect()->route('mahasiswa.absensi.index')
+            ->with('success', 'Presensi berhasil! Kehadiran Anda telah tercatat.');
+    }
+
+    public function riwayat()
+    {
+        $user = auth()->user();
+        $mahasiswa = Mahasiswa::where('user_id', $user->id)->first();
+        
+        $absensis = $mahasiswa ? Absensi::with(['sesiAbsensi.jadwal.mataKuliah'])
+            ->where('mahasiswa_id', $mahasiswa->id)
+            ->latest()
+            ->paginate(15) : collect();
+
+        return view('mahasiswa.riwayat.index', compact('absensis'));
+    }
+
+    public function statistik()
+    {
+        $user = auth()->user();
+        $mahasiswa = Mahasiswa::where('user_id', $user->id)->first();
+        $absensis = $mahasiswa ? Absensi::where('mahasiswa_id', $mahasiswa->id)->get() : collect();
+
+        $hadir = $absensis->where('status', 'hadir')->count();
+        $izin  = $absensis->where('status', 'izin')->count();
+        $sakit = $absensis->where('status', 'sakit')->count();
+        $alpa  = $absensis->where('status', 'alpa')->count();
+
+        return view('mahasiswa.statistik.index', compact('hadir', 'izin', 'sakit', 'alpa'));
+    }
+
+    public function cetakPdf()
+    {
+        $user = auth()->user();
+        $mahasiswa = Mahasiswa::where('user_id', $user->id)->first();
+        $absensis = $mahasiswa ? Absensi::with(['sesiAbsensi.jadwal.mataKuliah'])
+            ->where('mahasiswa_id', $mahasiswa->id)
+            ->get() : collect();
+
+        return view('mahasiswa.laporan.cetak', compact('mahasiswa', 'absensis'));
     }
 }
