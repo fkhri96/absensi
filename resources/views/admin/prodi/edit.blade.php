@@ -1,0 +1,47 @@
+@extends('layouts.app')
+
+@section('content')
+<div class="container">
+    <h3>Edit Program Studi</h3>
+    @if ($errors->any())
+        <div class="alert alert-danger"><ul class="mb-0">@foreach ($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>
+    @endif
+
+    <form action="{{ route('admin.prodi.update', $prodi->id) }}" method="POST">
+        @csrf
+        @method('PUT')
+        <div class="mb-3">
+            <label class="form-label">Fakultas</label>
+            <select name="fakultas_id" class="form-select" required>
+                @foreach($fakultasList as $fak)
+                    <option value="{{ $fak->id }}" {{ old('fakultas_id', $prodi->fakultas_id) == $fak->id ? 'selected' : '' }}>{{ $fak->nama_fakultas }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Kode Prodi</label>
+                <input type="text" name="kode_prodi" value="{{ old('kode_prodi', $prodi->kode_prodi) }}" class="form-control" required>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Jenjang</label>
+                <select name="jenjang" class="form-select" required>
+                    @foreach(['D3', 'D4', 'S1', 'S2'] as $j)
+                        <option value="{{ $j }}" {{ old('jenjang', $prodi->jenjang) == $j ? 'selected' : '' }}>{{ $j }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Nama Prodi</label>
+                <input type="text" name="nama_prodi" value="{{ old('nama_prodi', $prodi->nama_prodi) }}" class="form-control" required>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Ketua Program Studi (Opsional)</label>
+            <input type="text" name="kaprodi" value="{{ old('kaprodi', $prodi->kaprodi) }}" class="form-control">
+        </div>
+        <button type="submit" class="btn btn-primary">Update</button>
+        <a href="{{ route('admin.prodi.index') }}" class="btn btn-secondary">Batal</a>
+    </form>
+</div>
+@endsection
