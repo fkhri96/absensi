@@ -44,4 +44,9 @@ class DashboardController extends Controller
 
         return view('mahasiswa.dashboard', compact('mahasiswa', 'stats', 'sesiAktif', 'riwayatAbsensi'));
     }
+
+    public function notifikasi()
+    {
+        return view('mahasiswa.notifikasi.index');
+    }
 }

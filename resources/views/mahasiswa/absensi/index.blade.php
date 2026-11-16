@@ -1,154 +1,232 @@
 @extends('layouts.app')
 
-@section('title', 'Presensi & Riwayat | Absensi Kampus')
-@section('page_title', 'Presensi & Riwayat Kehadiran')
+@section('title', 'Scan QR Absensi | Absensi Kampus')
+@section('page_title', 'Scan QR Presensi')
 @section('role', 'mahasiswa')
 
 @section('content')
 <div class="container-fluid px-0">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
 
-    @if(session('success'))
-        <div class="alert alert-success border-0 rounded-4 shadow-sm mb-4">
-            <i class="bi bi-check-circle-fill me-1"></i> {{ session('success') }}
-        </div>
-    @endif
+            @if(session('success'))
+                <div class="alert alert-success border-0 rounded-4 shadow-sm mb-3">
+                    <i class="bi bi-check-circle-fill me-2"></i>{{ session('success') }}
+                </div>
+            @endif
 
-    @if(session('error'))
-        <div class="alert alert-danger border-0 rounded-4 shadow-sm mb-4">
-            <i class="bi bi-exclamation-triangle-fill me-1"></i> {{ session('error') }}
-        </div>
-    @endif
+            @if(session('error'))
+                <div class="alert alert-danger border-0 rounded-4 shadow-sm mb-3">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ session('error') }}
+                </div>
+            @endif
 
-    @if(session('warning'))
-        <div class="alert alert-warning border-0 rounded-4 shadow-sm mb-4">
-            <i class="bi bi-info-circle-fill me-1"></i> {{ session('warning') }}
-        </div>
-    @endif
+            @if(session('warning'))
+                <div class="alert alert-warning border-0 rounded-4 shadow-sm mb-3">
+                    <i class="bi bi-info-circle-fill me-2"></i>{{ session('warning') }}
+                </div>
+            @endif
 
-    <div class="row g-4">
-        <!-- Kolom Kiri: Kamera Scanner QR & Input Manual -->
-        <div class="col-lg-5">
-            <div class="panel p-4 shadow-sm h-100">
-                <div class="d-flex align-items-center gap-3 mb-3 pb-3 border-bottom">
-                    <span class="badge bg-primary bg-opacity-10 text-primary p-3 rounded-4">
-                        <i class="bi bi-qr-code-scan fs-4"></i>
-                    </span>
-                    <div>
-                        <h5 class="fw-bold mb-1">Scan Kamera HP</h5>
-                        <p class="text-muted small mb-0">Arahkan kamera ke QR Code dosen.</p>
-                    </div>
+            <div class="panel p-4 shadow-sm text-center">
+                <h5 class="fw-bold mb-1">Scan QR Code Dosen</h5>
+                <p class="text-muted small mb-3">Arahkan kamera HP ke QR Code di layar dosen atau unggah gambar QR.</p>
+
+                <!-- Pilihan Kamera -->
+                <div class="mb-3 text-start">
+                    <select id="camera-select" class="form-select form-select-sm"></select>
                 </div>
 
-                <!-- Wadah Kamera Scanner -->
-                <div id="reader" class="rounded-3 overflow-hidden border mb-3 bg-light" style="width: 100%; min-height: 250px;"></div>
+                <!-- Kotak Kamera -->
+                <div id="reader" class="rounded-4 overflow-hidden border bg-dark mb-3" style="width: 100%; min-height: 280px;"></div>
 
-                <!-- Form untuk mengirim token hasil scan / input manual -->
-                <form action="{{ route('mahasiswa.absensi.store') }}" method="POST" id="form-absensi">
+                <div id="status-kamera" class="small text-muted mb-3">Memuat kamera...</div>
+
+                <!-- Form Utama (Mengirim token_qr hasil scan kamera maupun upload gambar) -->
+                <form id="form-scan-qr" action="{{ route('mahasiswa.absensi.store') }}" method="POST">
                     @csrf
-                    <div class="mb-3">
-                        <label for="token_qr" class="form-label fw-semibold small">Token QR / Hasil Scan <span class="text-danger">*</span></label>
-                        <input type="text" id="token_qr" name="token_qr" class="form-control text-center font-monospace" placeholder="Akan terisi otomatis dari kamera atau ketik manual..." required>
-                    </div>
-                    <button type="submit" class="btn btn-brand w-100 py-3 fw-semibold rounded-3">
-                        <i class="bi bi-check-circle me-1"></i> Kirim Presensi Kehadiran
-                    </button>
+                    <input type="hidden" name="token_qr" id="input-token-qr">
                 </form>
-            </div>
-        </div>
 
-        <!-- Kolom Kanan: Riwayat Kehadiran Mahasiswa -->
-        <div class="col-lg-7">
-            <div class="panel p-4 shadow-sm h-100">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="fw-bold mb-0">Riwayat Kehadiran Terbaru</h6>
-                    <a href="{{ route('mahasiswa.laporan.cetak') }}" target="_blank" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1">
-                        <i class="bi bi-file-pdf"></i> Unduh Rekap PDF
-                    </a>
-                </div>
+                <hr class="my-4">
 
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 small">
-                        <thead class="table-light">
-                            <tr>
-                                <th>No</th>
-                                <th>Mata Kuliah</th>
-                                <th>Pertemuan</th>
-                                <th>Waktu Scan</th>
-                                <th class="text-center">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @php
-                                $userAuth = auth()->user();
-                                $mhs = $userAuth ? \App\Models\Mahasiswa::where('user_id', $userAuth->id)->first() : null;
-                                $riwayatAbsen = $mhs ? \App\Models\Absensi::with(['sesiAbsensi.jadwal.mataKuliah'])
-                                    ->where('mahasiswa_id', $mhs->id)
-                                    ->latest()
-                                    ->take(10)
-                                    ->get() : collect();
-                            @endphp
-
-                            @forelse($riwayatAbsen as $index => $absen)
-                                <tr>
-                                    <td>{{ $index + 1 }}</td>
-                                    <td class="fw-semibold">{{ optional(optional(optional($absen->sesiAbsensi)->jadwal)->mataKuliah)->nama_mk ?? '-' }}</td>
-                                    <td>Pertemuan ke-{{ optional($absen->sesiAbsensi)->pertemuan_ke ?? '-' }}</td>
-                                    <td>{{ $absen->created_at ? $absen->created_at->format('d/m/Y H:i') : '-' }}</td>
-                                    <td class="text-center">
-                                        <span class="badge bg-success bg-opacity-10 text-success text-uppercase px-2">
-                                            {{ $absen->status ?? 'hadir' }}
-                                        </span>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="5" class="text-center py-4 text-muted">
-                                        Belum ada riwayat kehadiran yang tercatat.
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                <!-- OPSI UPLOAD GAMBAR QR CODE -->
+                <div class="text-start">
+                    <label for="qr-input-file" class="form-label small fw-semibold text-muted">
+                        Atau pilih / unggah gambar QR Code dari galeri:
+                    </label>
+                    <input type="file" id="qr-input-file" class="form-control" accept="image/*">
+                    <div id="status-upload-qr" class="small mt-2"></div>
                 </div>
             </div>
         </div>
     </div>
-
 </div>
 @endsection
 
 @push('scripts')
-<!-- Library HTML5 QR Code Scanner -->
-<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        function onScanSuccess(decodedText, decodedResult) {
-            document.getElementById('token_qr').value = decodedText;
-            if (typeof html5QrcodeScanner !== 'undefined') {
-                html5QrcodeScanner.clear().then(_ => {
-                    document.getElementById('form-absensi').submit();
-                }).catch(error => {
-                    document.getElementById('form-absensi').submit();
-                });
-            } else {
-                document.getElementById('form-absensi').submit();
-            }
-        }
+document.addEventListener('DOMContentLoaded', function () {
+    const html5QrCode = new Html5Qrcode("reader");
+    const cameraSelect = document.getElementById('camera-select');
+    const statusText = document.getElementById('status-kamera');
+    const formScan = document.getElementById('form-scan-qr');
+    const inputToken = document.getElementById('input-token-qr');
 
-        function onScanFailure(error) {
-            // Mengabaikan error pemindaian frame kosong agar console bersih
+    // Elemen Upload File QR
+    const fileInput = document.getElementById('qr-input-file');
+    const statusUpload = document.getElementById('status-upload-qr');
+
+    let sudahTerbaca = false;
+    let kameraAktif = false;
+
+    function kirimTokenAbsensi(decodedText) {
+        if (sudahTerbaca) return;
+        sudahTerbaca = true;
+
+        inputToken.value = decodedText.trim();
+
+        if (kameraAktif) {
+            html5QrCode.stop().finally(() => {
+                formScan.submit();
+            });
+        } else {
+            formScan.submit();
         }
+    }
+
+    function onScanSuccess(decodedText) {
+        statusText.innerHTML = '<span class="text-success fw-bold">QR Terbaca! Menyimpan presensi...</span>';
+        kirimTokenAbsensi(decodedText);
+    }
+
+    function jalankanKamera(cameraId) {
+        html5QrCode.start(
+            cameraId,
+            {
+                fps: 15,
+                qrbox: { width: 240, height: 240 },
+                aspectRatio: 1.0
+            },
+            onScanSuccess,
+            () => {}
+        ).then(() => {
+            kameraAktif = true;
+            statusText.innerText = 'Kamera aktif. Silakan arahkan ke QR Code.';
+        }).catch(() => {
+            kameraAktif = false;
+            statusText.innerHTML = '<span class="text-danger">Kamera tidak aktif. Gunakan upload gambar QR di bawah.</span>';
+        });
+    }
+
+    // Helper: Resize gambar besar dari kamera HP agar decoder QR mudah membacanya
+    function optimalkanGambarUntukScan(file) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = function () {
+                const maxDim = 1000; // Batasi maksimal 1000px agar tajam tapi tidak terlalu berat
+                let width = img.width;
+                let height = img.height;
+
+                if (width <= maxDim && height <= maxDim) {
+                    resolve(file);
+                    return;
+                }
+
+                if (width > height) {
+                    height = Math.round((height * maxDim) / width);
+                    width = maxDim;
+                } else {
+                    width = Math.round((width * maxDim) / height);
+                    height = maxDim;
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                canvas.toBlob((blob) => {
+                    resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+                }, 'image/jpeg', 0.92);
+            };
+            img.src = URL.createObjectURL(file);
+        });
+    }
+
+    // Proses Scan File Gambar yang Di-upload
+    fileInput.addEventListener('change', async function (e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        statusUpload.innerHTML = '<span class="text-primary"><i class="bi bi-hourglass-split me-1"></i>Membaca kode QR dari gambar...</span>';
 
         try {
-            let html5QrcodeScanner = new Html5QrcodeScanner(
-                "reader",
-                { fps: 10, qrbox: { width: 250, height: 250 } },
-                false
-            );
-            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-        } catch (e) {
-            console.error("Scanner kamera gagal diinisialisasi:", e);
+            // Hentikan kamera sementara karena html5QrCode tidak bisa scan kamera & file bersamaan
+            if (kameraAktif) {
+                await html5QrCode.stop();
+                kameraAktif = false;
+            }
+
+            const fileOptimal = await optimalkanGambarUntukScan(file);
+            const decodedText = await html5QrCode.scanFile(fileOptimal, false);
+
+            statusUpload.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-check-circle me-1"></i>QR Terbaca! Menyimpan presensi...</span>';
+            kirimTokenAbsensi(decodedText);
+
+        } catch (err) {
+            statusUpload.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Kode QR tidak ditemukan pada gambar. Pastikan gambar jelas, tidak buram, dan tidak terpotong.</span>';
+            fileInput.value = '';
+
+            // Nyalakan kembali kamera jika sebelumnya aktif
+            if (cameraSelect.value) {
+                jalankanKamera(cameraSelect.value);
+            }
         }
     });
+
+    Html5Qrcode.getCameras().then(devices => {
+        if (devices && devices.length > 0) {
+            devices.forEach((device, i) => {
+                const opt = document.createElement('option');
+                opt.value = device.id;
+                opt.text = device.label || `Kamera ${i + 1}`;
+                cameraSelect.appendChild(opt);
+            });
+
+            const kameraBelakang = devices.find(d =>
+                d.label.toLowerCase().includes('back') ||
+                d.label.toLowerCase().includes('rear') ||
+                d.label.toLowerCase().includes('belakang') ||
+                d.label.toLowerCase().includes('environment')
+            );
+
+            if (kameraBelakang) {
+                cameraSelect.value = kameraBelakang.id;
+            } else if (devices.length > 1) {
+                cameraSelect.value = devices[devices.length - 1].id;
+            }
+
+            jalankanKamera(cameraSelect.value);
+        } else {
+            statusText.innerHTML = '<span class="text-danger">Kamera tidak ditemukan. Silakan unggah gambar QR di bawah.</span>';
+        }
+    }).catch(() => {
+        statusText.innerHTML = '<span class="text-danger">Akses kamera diblokir. Silakan unggah gambar QR di bawah.</span>';
+    });
+
+    cameraSelect.addEventListener('change', function () {
+        if (kameraAktif) {
+            html5QrCode.stop().then(() => {
+                jalankanKamera(this.value);
+            }).catch(() => {
+                jalankanKamera(this.value);
+            });
+        } else {
+            jalankanKamera(this.value);
+        }
+    });
+});
 </script>
 @endpush

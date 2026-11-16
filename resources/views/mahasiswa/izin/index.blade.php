@@ -13,95 +13,146 @@
         </div>
     @endif
 
+    @if(session('error'))
+        <div class="alert alert-danger border-0 rounded-4 shadow-sm mb-4">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i> {{ session('error') }}
+        </div>
+    @endif
+
+    @if($errors->any())
+        <div class="alert alert-danger border-0 rounded-4 shadow-sm mb-4">
+            <ul class="mb-0 small">
+                @foreach($errors->all() as $err)
+                    <li>{{ $err }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <div class="row g-4">
-        <!-- Kolom Kiri: Form Pengajuan -->
+        <!-- Form Pengajuan -->
         <div class="col-lg-5">
             <div class="panel p-4 shadow-sm h-100">
-                <h5 class="fw-bold mb-3">Buat Pengajuan Baru</h5>
-                <p class="text-muted small mb-4">Ajukan izin atau keterangan sakit dengan melampirkan alasan dan bukti pendukung.</p>
+                <h5 class="fw-bold mb-2">Kirim Surat Izin / Sakit</h5>
+                <p class="text-muted small mb-4">Surat akan langsung dikirim ke dosen yang mengajar pada mata kuliah & hari yang dipilih.</p>
 
                 <form action="{{ route('mahasiswa.izin.store') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="mb-3">
-                        <label for="jenis" class="form-label fw-semibold small">Jenis Pengajuan <span class="text-danger">*</span></label>
-                        <select name="jenis" id="jenis" class="form-select" required>
-                            <option value="izin">Izin</option>
-                            <option value="sakit">Sakit</option>
+                        <label for="jadwal_id" class="form-label fw-semibold small">Mata Kuliah & Dosen Pengampu <span class="text-danger">*</span></label>
+                        <select name="jadwal_id" id="jadwal_id" class="form-select" required>
+                            <option value="">-- Pilih Mata Kuliah / Jadwal --</option>
+                            @foreach($jadwals ?? [] as $jadwal)
+                                <option value="{{ $jadwal->id }}">
+                                    {{ $jadwal->hari }} | {{ $jadwal->mataKuliah->nama_mk ?? '-' }} ({{ $jadwal->dosen->user->name ?? $jadwal->mataKuliah->dosen->user->name ?? 'Dosen' }})
+                                </option>
+                            @endforeach
                         </select>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="tanggal" class="form-label fw-semibold small">Tanggal <span class="text-danger">*</span></label>
-                        <input type="date" name="tanggal" id="tanggal" class="form-control" required>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label for="jenis" class="form-label fw-semibold small">Jenis <span class="text-danger">*</span></label>
+                            <select name="jenis" id="jenis" class="form-select" required>
+                                <option value="izin">Izin</option>
+                                <option value="sakit">Sakit</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label for="tanggal" class="form-label fw-semibold small">Tanggal Kuliah <span class="text-danger">*</span></label>
+                            <input type="date" name="tanggal" id="tanggal" value="{{ date('Y-m-d') }}" class="form-control" required>
+                        </div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="keterangan" class="form-label fw-semibold small">Keterangan / Alasan <span class="text-danger">*</span></label>
-                        <textarea name="keterangan" id="keterangan" rows="3" class="form-control" placeholder="Tuliskan keterangan lengkap..." required></textarea>
+                        <label for="keterangan" class="form-label fw-semibold small">Alasan / Keterangan <span class="text-danger">*</span></label>
+                        <textarea name="keterangan" id="keterangan" rows="3" class="form-control" placeholder="Contoh: Sakit demam dan melampirkan surat dokter..." required></textarea>
                     </div>
 
                     <div class="mb-3">
-                        <label for="bukti_file" class="form-label fw-semibold small">Bukti Pendukung (Opsional)</label>
-                        <input type="file" name="bukti_file" id="bukti_file" class="form-control" accept="image/*">
-                        <small class="text-muted" style="font-size: 0.75rem;">Format gambar (JPG, PNG), Maks. 2MB.</small>
+                        <label for="bukti_file" class="form-label fw-semibold small">Upload Surat Izin / Surat Dokter</label>
+                        <input type="file" name="bukti_file" id="bukti_file" class="form-control" accept=".jpg,.jpeg,.png,.pdf">
+                        <small class="text-muted" style="font-size: 0.75rem;">Format JPG, PNG, atau PDF (Maks. 2MB).</small>
                     </div>
 
                     <button type="submit" class="btn btn-brand w-100 py-3 fw-semibold rounded-3">
-                        <i class="bi bi-send me-1"></i> Kirim Pengajuan
+                        <i class="bi bi-send me-1"></i> Kirim Surat ke Dosen
                     </button>
                 </form>
             </div>
         </div>
 
-        <!-- Kolom Kanan: Riwayat Pengajuan -->
+        <!-- Riwayat Pengajuan -->
         <div class="col-lg-7">
             <div class="panel p-4 shadow-sm h-100">
-                <h5 class="fw-bold mb-3">Riwayat Pengajuan</h5>
-                <p class="text-muted small mb-4">Status verifikasi pengajuan izin atau sakit yang pernah Anda kirimkan.</p>
+                <h5 class="fw-bold mb-2">Riwayat Pengajuan Saya</h5>
+                <p class="text-muted small mb-4">Anda dapat membatalkan pengajuan jika salah ketik selama status masih <strong>Menunggu</strong>.</p>
 
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
+                    <table class="table table-hover align-middle mb-0 small">
                         <thead class="table-light">
                             <tr>
-                                <th>No</th>
                                 <th>Tanggal</th>
+                                <th>Mata Kuliah / Dosen</th>
                                 <th>Jenis</th>
-                                <th>Keterangan</th>
+                                <th>Surat</th>
                                 <th class="text-center">Status</th>
+                                <th class="text-end">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($izins ?? [] as $index => $izin)
+                            @forelse($izins ?? [] as $izin)
                                 <tr>
-                                    <td>{{ $index + 1 }}</td>
                                     <td>{{ \Carbon\Carbon::parse($izin->tanggal)->format('d/m/Y') }}</td>
                                     <td>
-                                        <span class="badge bg-secondary bg-opacity-10 text-dark text-uppercase px-2">
-                                            {{ $izin->jenis }}
-                                        </span>
+                                        <div class="fw-semibold">{{ $izin->jadwal->mataKuliah->nama_mk ?? '-' }}</div>
+                                        <small class="text-muted">{{ $izin->dosen->user->name ?? '-' }}</small>
                                     </td>
-                                    <td>{{ Str::limit($izin->keterangan, 30) }}</td>
+                                    <td><span class="badge bg-secondary bg-opacity-10 text-dark text-uppercase">{{ $izin->jenis }}</span></td>
+                                    <td>
+                                        @if($izin->bukti)
+                                            <a href="{{ asset('storage/' . $izin->bukti) }}" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-2">
+                                                <i class="bi bi-file-earmark-text"></i> Lihat
+                                            </a>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
                                     <td class="text-center">
                                         @if($izin->status == 'disetujui')
-                                            <span class="badge bg-success bg-opacity-10 text-success px-2">Disetujui</span>
+                                            <span class="badge bg-success bg-opacity-10 text-success">Disetujui</span>
                                         @elseif($izin->status == 'ditolak')
-                                            <span class="badge bg-danger bg-opacity-10 text-danger px-2">Ditolak</span>
+                                            <span class="badge bg-danger bg-opacity-10 text-danger">Ditolak</span>
                                         @else
-                                            <span class="badge bg-warning bg-opacity-10 text-warning px-2">Pending</span>
+                                            <span class="badge bg-warning bg-opacity-10 text-warning">Menunggu</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-end">
+                                        @if($izin->status === 'pending')
+                                            <form action="{{ route('mahasiswa.izin.destroy', $izin->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Batalkan pengajuan surat izin ini?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Batalkan Pengajuan">
+                                                    <i class="bi bi-x-circle"></i> Batalkan
+                                                </button>
+                                            </form>
+                                        @else
+                                            <span class="text-muted fst-italic">-</span>
                                         @endif
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center py-4 text-muted">
-                                        <i class="bi bi-file-earmark-medical fs-3 d-block mb-2"></i>
-                                        Belum ada riwayat pengajuan izin atau sakit.
-                                    </td>
+                                    <td colspan="6" class="text-center py-4 text-muted">Belum ada pengajuan izin.</td>
                                 </tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
+
+                @if(method_exists($izins, 'links'))
+                    <div class="mt-3">{{ $izins->links() }}</div>
+                @endif
             </div>
         </div>
     </div>

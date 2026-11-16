@@ -15,25 +15,58 @@ class AbsensiController extends Controller
         return view('mahasiswa.absensi.index');
     }
 
+    public function scanLangsung($token)
+    {
+        $tokenBersih = trim(basename(parse_url($token, PHP_URL_PATH) ?? $token));
+        return $this->prosesPresensi($tokenBersih);
+    }
+
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $request->validate([
             'token_qr' => 'required|string',
         ]);
 
+        $input = trim($request->token_qr);
+
+        // Ekstrak kode token murni baik dari URL apa pun maupun teks langsung
+        $path  = parse_url($input, PHP_URL_PATH) ?? $input;
+        $token = trim(basename($path));
+
+        return $this->prosesPresensi($token);
+    }
+
+    private function prosesPresensi(string $token)
+    {
         $user = auth()->user();
         $mahasiswa = Mahasiswa::where('user_id', $user->id)->first();
-        
+
         if (!$mahasiswa) {
-            return back()->with('error', 'Data profil mahasiswa tidak ditemukan.');
+            return redirect()->route('mahasiswa.absensi.index')
+                ->with('error', 'Data profil mahasiswa tidak ditemukan.');
         }
 
-        $sesi = SesiAbsensi::where('token_qr', $validated['token_qr'])
-            ->where('status', 'buka')
+        // Bersihkan karakter tak terlihat jika ada
+        $tokenClean = preg_replace('/[^A-Za-z0-9\-]/', '', $token);
+
+        $sesi = SesiAbsensi::with('jadwal.mataKuliah')
+            ->where('token_qr', $tokenClean)
             ->first();
 
         if (!$sesi) {
-            return back()->with('error', 'QR Code tidak valid, sudah kedaluwarsa, atau sesi ditutup oleh dosen.');
+            return redirect()->route('mahasiswa.absensi.index')
+                ->with('error', 'QR Code tidak dikenali. (Terbaca: ' . $tokenClean . ')');
+        }
+
+        if ($sesi->status !== 'buka') {
+            return redirect()->route('mahasiswa.absensi.index')
+                ->with('error', 'QR Code sedang DIMATIKAN oleh dosen. Presensi tidak dapat dilakukan.');
+        }
+
+        $prodiMatkul = $sesi->jadwal->mataKuliah->prodi_id ?? null;
+        if ($mahasiswa->prodi_id && $prodiMatkul && $mahasiswa->prodi_id != $prodiMatkul) {
+            return redirect()->route('mahasiswa.absensi.index')
+                ->with('error', 'QR Code ini bukan untuk Program Studi Anda.');
         }
 
         $sudahAbsen = Absensi::where('sesi_absensi_id', $sesi->id)
@@ -41,7 +74,8 @@ class AbsensiController extends Controller
             ->exists();
 
         if ($sudahAbsen) {
-            return back()->with('warning', 'Anda sudah tercatat hadir pada sesi perkuliahan ini.');
+            return redirect()->route('mahasiswa.riwayat.index')
+                ->with('warning', 'Anda sudah tercatat hadir pada pertemuan ke-' . $sesi->pertemuan_ke . ' ini.');
         }
 
         Absensi::create([
@@ -50,15 +84,15 @@ class AbsensiController extends Controller
             'status'          => 'hadir',
         ]);
 
-        return redirect()->route('mahasiswa.absensi.index')
-            ->with('success', 'Presensi berhasil! Kehadiran Anda telah tercatat.');
+        return redirect()->route('mahasiswa.riwayat.index')
+            ->with('success', 'Presensi berhasil! Kehadiran Anda pada mata kuliah ' . ($sesi->jadwal->mataKuliah->nama_mk ?? '') . ' telah tercatat.');
     }
 
     public function riwayat()
     {
         $user = auth()->user();
         $mahasiswa = Mahasiswa::where('user_id', $user->id)->first();
-        
+
         $absensis = $mahasiswa ? Absensi::with(['sesiAbsensi.jadwal.mataKuliah'])
             ->where('mahasiswa_id', $mahasiswa->id)
             ->latest()

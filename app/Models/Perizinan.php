@@ -9,10 +9,12 @@ class Perizinan extends Model
 {
     use HasFactory;
 
-    protected $table = 'perizinans'; // Sesuaikan dengan nama tabel di database jika ada
+    protected $table = 'perizinans';
 
     protected $fillable = [
         'mahasiswa_id',
+        'jadwal_id',
+        'dosen_id',
         'jenis',
         'tanggal',
         'keterangan',
@@ -23,5 +25,15 @@ class Perizinan extends Model
     public function mahasiswa()
     {
         return $this->belongsTo(Mahasiswa::class);
+    }
+
+    public function jadwal()
+    {
+        return $this->belongsTo(Jadwal::class);
+    }
+
+    public function dosen()
+    {
+        return $this->belongsTo(Dosen::class);
     }
 }

@@ -13,6 +13,26 @@
         <span class="badge rounded-pill bg-warning text-dark">{{ $sesiAktifCount }}</span>
     @endif
 </a>
+@php
+    $dosenAuth = auth()->user() && auth()->user()->role === 'dosen'
+        ? \App\Models\Dosen::where('user_id', auth()->id())->first()
+        : null;
+    $jumlahIzinPending =$dosenAuth
+        ? \App\Models\Perizinan::where('dosen_id', $dosenAuth->id)->where('status', 'pending')->count()
+        : 0;
+@endphp
+
+@if(Route::has('dosen.izin.index'))
+<a href="{{ route('dosen.izin.index') }}" class="nav-link d-flex justify-content-between align-items-center {{ request()->routeIs('dosen.izin.*') ? 'active' : '' }}">
+    <span class="d-flex align-items-center gap-2">
+        <i class="bi bi-envelope-paper fs-6"></i>
+        <span>Surat Izin Mahasiswa</span>
+    </span>
+    @if($jumlahIzinPending > 0)
+        <span class="badge bg-danger rounded-pill">{{ $jumlahIzinPending }}</span>
+    @endif
+</a>
+@endif
 
 <div class="nav-label">Perkuliahan</div>
 <a class="nav-link {{ request()->routeIs('dosen.matakuliah.*') ? 'active' : '' }}" href="{{ route('dosen.matakuliah.index') }}">

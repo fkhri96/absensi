@@ -9,15 +9,22 @@ class SesiAbsensi extends Model
 {
     use HasFactory;
 
-    protected $guarded = ['id'];
+    protected $table = 'sesi_absensis';
 
-    // Relasi ke tabel jadwals
+    protected $fillable = [
+        'jadwal_id',
+        'tanggal',
+        'pertemuan_ke',
+        'materi',
+        'token_qr',
+        'status',
+    ];
+
     public function jadwal()
     {
-        return $this->belongsTo(Jadwal::class, 'jadwal_id');
+        return $this->belongsTo(Jadwal::class);
     }
 
-    // Relasi ke tabel absensis (untuk menghitung jumlah hadir)
     public function absensis()
     {
         return $this->hasMany(Absensi::class, 'sesi_absensi_id');

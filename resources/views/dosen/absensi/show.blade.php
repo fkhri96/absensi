@@ -1,107 +1,98 @@
 @extends('layouts.app')
 
-@section('title', 'Sesi QR Aktif | Absensi Kampus')
-@section('page_title', 'Kontrol Sesi Absensi')
+@section('title', 'QR Code Absensi | Absensi Kampus')
+@section('page_title', 'QR Code Presensi')
 @section('role', 'dosen')
 
 @section('content')
 <div class="container-fluid px-0">
-
     @if(session('success'))
         <div class="alert alert-success border-0 rounded-4 shadow-sm mb-4">
-            <i class="bi bi-check-circle-fill me-1"></i> {{ session('success') }}
+            <i class="bi bi-check-circle-fill me-2"></i>{{ session('success') }}
         </div>
     @endif
 
     <div class="row g-4">
-        <!-- Kolom Kiri: QR Code & Kontrol Sesi -->
+        <!-- Kolom Kiri: Tampilan QR Code -->
         <div class="col-lg-5">
             <div class="panel p-4 shadow-sm text-center">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <span class="badge bg-primary bg-opacity-10 text-primary">Pertemuan ke-{{ $sesi->pertemuan_ke }}</span>
-                    @if($sesi->status === 'buka')
-                        <span class="badge bg-success">Sesi Dibuka</span>
-                    @else
-                        <span class="badge bg-secondary">Sesi Ditutup</span>
-                    @endif
-                </div>
+                <span class="badge rounded-pill {{ $sesi->status === 'buka' ? 'bg-success' : 'bg-danger' }} px-3 py-2 mb-3">
+                    STATUS QR: {{ $sesi->status === 'buka' ? 'HIDUP (AKTIF)' : 'MATI (DITUTUP)' }}
+                </span>
 
                 <h5 class="fw-bold mb-1">{{ $sesi->jadwal->mataKuliah->nama_mk ?? 'Mata Kuliah' }}</h5>
-                <p class="text-muted small mb-3">{{ $sesi->materi ?? 'Perkuliahan Reguler' }}</p>
+                <p class="text-muted small mb-3">Pertemuan Ke-{{ $sesi->pertemuan_ke }} • {{$sesi->tanggal }}</p>
 
-                <!-- Wadah QR Code Lokal (Tanpa Internet) -->
-                <div class="bg-white p-3 rounded-4 border d-inline-block mb-3 shadow-sm">
-                    <div id="qrcode-container" class="d-flex justify-content-center align-items-center" style="width: 200px; height: 200px;"></div>
+                @if($sesi->status === 'buka')
+                    <div class="p-3 bg-white border rounded-4 d-inline-block shadow-sm mb-3">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=10&data={{ urlencode($sesi->token_qr) }}"
+                             alt="QR Code Absensi"
+                             class="img-fluid"
+                             style="width: 260px; height: 260px;">
+                    </div>
+                @else
+                    <div class="p-5 bg-light border rounded-4 text-muted mb-3">
+                        <i class="bi bi-qr-code display-1 opacity-25"></i>
+                        <p class="mt-2 mb-0 small">QR Code sedang dimatikan.</p>
+                    </div>
+                @endif
+
+                <div class="bg-light rounded-3 p-2 mb-3">
+                    <small class="text-muted d-block">Kode Token Manual:</small>
+                    <strong class="fs-5 text-primary user-select-all">{{ $sesi->token_qr }}</strong>
                 </div>
 
-                <div class="alert alert-warning py-2 small mb-3">
-                    <i class="bi bi-clock me-1"></i> Berakhir pada: <strong>{{ \Carbon\Carbon::parse($sesi->jam_selesai)->format('H:i') }}</strong>
+                <div class="d-grid gap-2">
+                    <form action="{{ route('dosen.absensi.toggle', $sesi->id) }}" method="POST">
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit" class="btn {{ $sesi->status === 'buka' ? 'btn-warning' : 'btn-success' }} w-100 fw-semibold">
+                            <i class="bi {{ $sesi->status === 'buka' ? 'bi-pause-circle' : 'bi-play-circle' }} me-1"></i>
+                            {{ $sesi->status === 'buka' ? 'Matikan QR Code' : 'Hidupkan QR Code' }}
+                        </button>
+                    </form>
+
+                    <a href="{{ route('dosen.absensi.index') }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar Sesi
+                    </a>
                 </div>
-
-                <!-- Tombol Tutup / Buka Sesi -->
-                <form action="{{ route('dosen.absensi.update-status', $sesi->id) }}" method="POST" class="mb-2">
-                    @csrf
-                    @method('PATCH')
-                    @if($sesi->status === 'buka')
-                        <input type="hidden" name="status" value="tutup">
-                        <button type="submit" class="btn btn-danger w-100 rounded-3 fw-semibold" onclick="return confirm('Tutup sesi absensi ini sekarang?')">
-                            <i class="bi bi-stop-circle me-1"></i> Tutup Sesi QR
-                        </button>
-                    @else
-                        <input type="hidden" name="status" value="buka">
-                        <button type="submit" class="btn btn-success w-100 rounded-3 fw-semibold">
-                            <i class="bi bi-play-circle me-1"></i> Buka Kembali Sesi QR
-                        </button>
-                    @endif
-                </form>
-
-                <!-- Tombol Hapus Sesi -->
-                <form action="{{ route('dosen.absensi.destroy', $sesi->id) }}" method="POST" onsubmit="return confirm('Hapus permanen sesi QR pertemuan ini beserta data kehadirannya?')">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn btn-outline-danger w-100 rounded-3 fw-semibold">
-                        <i class="bi bi-trash me-1"></i> Hapus Sesi QR
-                    </button>
-                </form>
             </div>
         </div>
 
-        <!-- Kolom Kanan: Daftar Mahasiswa Hadir Real-time -->
+        <!-- Kolom Kanan: Daftar Mahasiswa yang Sudah Scan -->
         <div class="col-lg-7">
             <div class="panel p-4 shadow-sm">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="fw-bold mb-0">Mahasiswa Tercatat Hadir</h6>
-                    <span class="badge bg-primary rounded-pill px-3 py-1">{{ $sesi->absensis->count() }} Mahasiswa</span>
+                    <h6 class="fw-bold mb-0">Mahasiswa Hadir ({{ $sesi->absensis->count() }})</h6>
+                    <button type="button" onclick="window.location.reload()" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-arrow-clockwise me-1"></i> Refresh Data
+                    </button>
                 </div>
 
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 small">
+                    <table class="table table-hover align-middle small">
                         <thead class="table-light">
                             <tr>
                                 <th>No</th>
                                 <th>NIM</th>
                                 <th>Nama Mahasiswa</th>
                                 <th>Waktu Scan</th>
-                                <th class="text-center">Status</th>
+                                <th>Status</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($sesi->absensis as $index => $absen)
+                            @forelse($sesi->absensis as $index =>$absen)
                                 <tr>
                                     <td>{{ $index + 1 }}</td>
-                                    <td class="fw-semibold">{{ $absen->mahasiswa->nim ?? '-' }}</td>
-                                    <td>{{ $absen->mahasiswa->user->name ?? '-' }}</td>
-                                    <td>{{ $absen->waktu_absen ? \Carbon\Carbon::parse($absen->waktu_absen)->format('H:i:s') : '-' }}</td>
-                                    <td class="text-center">
-                                        <span class="badge bg-success bg-opacity-10 text-success text-uppercase px-2">
-                                            {{ $absen->status }}
-                                        </span>
-                                    </td>
+                                    <td>{{ $absen->mahasiswa->nim ?? '-' }}</td>
+                                    <td class="fw-semibold">{{ $absen->mahasiswa->user->name ?? '-' }}</td>
+                                    <td>{{ $absen->created_at ? $absen->created_at->format('H:i:s') : '-' }}</td>
+                                    <td><span class="badge bg-success text-uppercase">{{ $absen->status }}</span></td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center py-4 text-muted">
-                                        Belum ada mahasiswa yang melakukan scan QR.
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        Belum ada mahasiswa yang melakukan scan.
                                     </td>
                                 </tr>
                             @endforelse
@@ -111,39 +102,5 @@
             </div>
         </div>
     </div>
-
 </div>
 @endsection
-
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-<script>
-    const tokenQr = "{{ $sesi->token_qr }}";
-    
-    try {
-        var typeNumber = 0;
-        var errorCorrectionLevel = 'H';
-        var qr = qrcode(typeNumber, errorCorrectionLevel);
-        qr.addData(tokenQr);
-        qr.make();
-        
-        document.getElementById('qrcode-container').innerHTML = qr.createSvgTag({
-            scalable: true,
-            margin: 2
-        });
-        
-        const svgEl = document.querySelector('#qrcode-container svg');
-        if(svgEl) {
-            svgEl.style.width = '200px';
-            svgEl.style.height = '200px';
-        }
-    } catch (e) {
-        document.getElementById('qrcode-container').innerText = 'Token: ' + tokenQr;
-    }
-
-    // Auto-refresh halaman setiap 15 detik agar daftar mahasiswa yang hadir ter-update secara real-time
-    setTimeout(function() {
-        location.reload();
-    }, 15000);
-</script>
-@endpush

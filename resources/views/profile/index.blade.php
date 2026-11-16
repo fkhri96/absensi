@@ -5,6 +5,8 @@
 @section('role', auth()->user()->role ?? 'mahasiswa')
 
 @push('styles')
+<!-- CSS Cropper.js -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
 <style>
     .profile-cover {
         height: 135px;
@@ -47,6 +49,21 @@
         background: var(--navy);
         transform: scale(1.08);
     }
+
+    /* Styling Area Crop Modal */
+    .img-container-crop {
+        max-height: 360px;
+        width: 100%;
+        overflow: hidden;
+    }
+    .img-container-crop img {
+        display: block;
+        max-width: 100%;
+    }
+    .cropper-view-box,
+    .cropper-face {
+        border-radius: 50%;
+    }
 </style>
 @endpush
 
@@ -71,20 +88,23 @@
     @endif
 
     <div class="row g-4">
-        <!-- Kolom Kiri: Kartu Identitas & Foto -->
         <div class="col-lg-4">
             <div class="panel overflow-hidden shadow-sm text-center pb-4">
                 <div class="profile-cover"></div>
 
                 @php
-                    $fotoUrl = $user->foto
-                        ? asset('storage/' . $user->foto)
-                        : 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&background=0b2545&color=ffffff&size=240&bold=true';
+                    if (!empty($user->foto)) {
+                        $fotoUrl = str_starts_with($user->foto, 'uploads/')
+                            ? '/' . ltrim($user->foto, '/')
+                            : '/storage/' . ltrim($user->foto, '/');
+                    } else {
+                        $fotoUrl = 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&background=0b2545&color=ffffff&size=240&bold=true';
+                    }
                 @endphp
 
                 <div class="avatar-wrapper">
                     <img id="preview-avatar" src="{{ $fotoUrl }}" alt="Foto Profil {{ $user->name }}">
-                    <label for="foto" class="btn-camera-badge" title="Ganti Foto Profil">
+                    <label for="foto" class="btn-camera-badge" title="Ganti & Atur Foto Profil">
                         <i class="bi bi-camera-fill"></i>
                     </label>
                 </div>
@@ -128,7 +148,7 @@
                     </div>
 
                     <p class="text-muted mb-3" style="font-size: 0.78rem;">
-                        Klik ikon kamera pada foto untuk memilih gambar baru, lalu tekan <strong>Simpan Perubahan</strong>.
+                        Klik ikon kamera untuk memilih & mengatur posisi foto, lalu tekan <strong>Simpan Perubahan Profil</strong>.
                     </p>
 
                     @if($user->foto)
@@ -144,7 +164,6 @@
             </div>
         </div>
 
-        <!-- Kolom Kanan: Form Edit Data & Upload -->
         <div class="col-lg-8">
             <div class="panel p-4 p-md-5 shadow-sm">
                 <form action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data">
@@ -157,15 +176,20 @@
                         </span>
                         <div>
                             <h6 class="fw-bold mb-0">Foto Profil Akun</h6>
-                            <small class="text-muted">Format JPG, PNG, atau WEBP dengan ukuran maksimal 2 MB.</small>
+                            <small class="text-muted">Format JPG, PNG, atau WEBP (maksimal 2 MB). Anda bisa mengatur posisi foto setelah memilih file.</small>
                         </div>
                     </div>
 
                     <div class="mb-4">
-                        <input type="file" id="foto" name="foto" accept="image/png,image/jpeg,image/webp"
-                               class="form-control @error('foto') is-invalid @enderror">
+                        <div class="d-flex gap-2 align-items-center">
+                            <input type="file" id="foto" name="foto" accept="image/png,image/jpeg,image/webp"
+                                   class="form-control @error('foto') is-invalid @enderror">
+                            <button type="button" id="btn-atur-ulang" class="btn btn-outline-secondary d-none text-nowrap" title="Atur Ulang Posisi Foto">
+                                <i class="bi bi-crop me-1"></i> Atur Posisi
+                            </button>
+                        </div>
                         @error('foto')
-                            <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -256,15 +280,147 @@
     </div>
 
 </div>
+
+<!-- MODAL ATUR POSISI / CROP FOTO -->
+<div class="modal fade" id="modalCropFoto" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0">
+                <h6 class="modal-title fw-bold"><i class="bi bi-crop me-1 text-primary"></i> Atur Posisi Pas Foto</h6>
+                <button type="button" class="btn-close" id="btn-batal-crop" data-bs-dismiss="modal" aria-label="Batal"></button>
+            </div>
+            <div class="modal-body py-0">
+                <div class="img-container-crop bg-dark rounded-3">
+                    <img id="image-to-crop" src="" alt="Crop Preview">
+                </div>
+                <div class="d-flex justify-content-center align-items-center gap-2 mt-3">
+                    <button type="button" class="btn btn-sm btn-light border" id="btn-zoom-in" title="Perbesar">
+                        <i class="bi bi-zoom-in"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light border" id="btn-zoom-out" title="Perkecil">
+                        <i class="bi bi-zoom-out"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light border" id="btn-rotate" title="Putar 90°">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light border" id="btn-reset-crop" title="Reset Posisi">
+                        <i class="bi bi-arrow-counterclockwise"></i> Reset
+                    </button>
+                </div>
+                <p class="text-center text-muted small mt-2 mb-0">Geser foto atau gunakan scroll/cubit layar untuk menyesuaikan posisi wajah.</p>
+            </div>
+            <div class="modal-footer border-top-0">
+                <button type="button" class="btn btn-light rounded-pill px-3" id="btn-batal-footer" data-bs-dismiss="modal">Batal</button>
+                <button type="button" id="btn-oke-crop" class="btn btn-brand rounded-pill px-4">
+                    <i class="bi bi-check-lg me-1"></i> Oke, Gunakan Foto
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
+<!-- JS Cropper.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 <script>
-    document.getElementById('foto').addEventListener('change', function (e) {
+document.addEventListener('DOMContentLoaded', function () {
+    const inputFoto = document.getElementById('foto');
+    const previewAvatar = document.getElementById('preview-avatar');
+    const btnAturUlang = document.getElementById('btn-atur-ulang');
+
+    const modalEl = document.getElementById('modalCropFoto');
+    const modalCrop = new bootstrap.Modal(modalEl);
+    const imageToCrop = document.getElementById('image-to-crop');
+    const btnOkeCrop = document.getElementById('btn-oke-crop');
+
+    let cropper = null;
+    let originalImageDataUrl = null;
+    let sudahDiOke = false;
+
+    // 1. Saat user memilih foto baru dari file input atau ikon kamera
+    inputFoto.addEventListener('change', function (e) {
         const file = e.target.files[0];
-        if (file) {
-            document.getElementById('preview-avatar').src = URL.createObjectURL(file);
+        if (!file) return;
+
+        sudahDiOke = false;
+        const reader = new FileReader();
+        reader.onload = function (event) {
+            originalImageDataUrl = event.target.result;
+            imageToCrop.src = originalImageDataUrl;
+            modalCrop.show();
+        };
+        reader.readAsDataURL(file);
+    });
+
+    // Tombol "Atur Posisi" jika user ingin menggeser ulang foto yang barusan dipilih
+    btnAturUlang.addEventListener('click', function () {
+        if (originalImageDataUrl) {
+            imageToCrop.src = originalImageDataUrl;
+            modalCrop.show();
         }
     });
+
+    // 2. Jalankan Cropper saat Modal terbuka penuh
+    modalEl.addEventListener('shown.bs.modal', function () {
+        cropper = new Cropper(imageToCrop, {
+            aspectRatio: 1,
+            viewMode: 1,
+            dragMode: 'move',
+            autoCropArea: 0.85,
+            restore: false,
+            guides: false,
+            center: true,
+            highlight: false,
+            cropBoxMovable: false,
+            cropBoxResizable: false,
+            toggleDragModeOnDblclick: false,
+        });
+    });
+
+    // 3. Bersihkan Cropper saat Modal ditutup
+    modalEl.addEventListener('hidden.bs.modal', function () {
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+        // Jika modal ditutup/dibatalkan sebelum klik "Oke" dan belum ada foto yang dikonfirmasi, kosongkan input
+        if (!sudahDiOke) {
+            inputFoto.value = '';
+        }
+    });
+
+    // Kontrol Zoom, Rotate & Reset
+    document.getElementById('btn-zoom-in').addEventListener('click', () => cropper && cropper.zoom(0.1));
+    document.getElementById('btn-zoom-out').addEventListener('click', () => cropper && cropper.zoom(-0.1));
+    document.getElementById('btn-rotate').addEventListener('click', () => cropper && cropper.rotate(90));
+    document.getElementById('btn-reset-crop').addEventListener('click', () => cropper && cropper.reset());
+
+    // 4. Saat klik "Oke, Gunakan Foto"
+    btnOkeCrop.addEventListener('click', function () {
+        if (!cropper) return;
+
+        const canvas = cropper.getCroppedCanvas({
+            width: 400,
+            height: 400,
+            imageSmoothingQuality: 'high',
+        });
+
+        // Update gambar preview profil di kolom kiri
+        previewAvatar.src = canvas.toDataURL('image/jpeg', 0.9);
+
+        // Masukkan hasil crop ke <input id="foto"> agar langsung terkirim saat klik "Simpan Perubahan Profil"
+        canvas.toBlob(function (blob) {
+            const fileHasilCrop = new File([blob], 'foto-profil.jpg', { type: 'image/jpeg' });
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(fileHasilCrop);
+            inputFoto.files = dataTransfer.files;
+
+            sudahDiOke = true;
+            btnAturUlang.classList.remove('d-none');
+            modalCrop.hide();
+        }, 'image/jpeg', 0.9);
+    });
+});
 </script>
 @endpush

@@ -3,30 +3,25 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Absensi;
 use App\Models\SesiAbsensi;
 use Illuminate\Http\Request;
 
 class AbsensiController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
-        $sesis = SesiAbsensi::with(['jadwal.mataKuliah.dosen.user'])
-            ->withCount('absensis')
-            ->when($request->search, function ($query, $search) {
-                $query->where(function ($q) use ($search) {
-                    $q->whereHas('jadwal.mataKuliah', function ($sub) use ($search) {
-                        $sub->where('nama_mk', 'like', "%{$search}%");
-                    })->orWhereHas('jadwal.mataKuliah.dosen.user', function ($sub) use ($search) {
-                        $sub->where('name', 'like', "%{$search}%");
-                    });
-                });
-            })
-            ->when($request->tanggal, function ($query, $tanggal) {
-                $query->whereDate('tanggal', $tanggal);
-            })
+        // Pantau semua sesi QR yang dibuat oleh dosen
+        $sesis = SesiAbsensi::with(['jadwal.mataKuliah.dosen.user', 'jadwal.mataKuliah.prodi', 'absensis'])
             ->latest()
-            ->paginate(10);
+            ->paginate(15);
 
-        return view('admin.absensi.index', compact('sesis'));
+        // Pantau log kehadiran mahasiswa terbaru
+        $absensis = Absensi::with(['mahasiswa.user', 'mahasiswa.prodi', 'sesiAbsensi.jadwal.mataKuliah'])
+            ->latest()
+            ->take(20)
+            ->get();
+
+        return view('admin.absensi.index', compact('sesis', 'absensis'));
     }
 }
