@@ -31,17 +31,22 @@
                 <h5 class="fw-bold mb-1">Scan QR Code Dosen</h5>
                 <p class="text-muted small mb-3">Arahkan kamera HP ke QR Code di layar dosen atau unggah gambar QR.</p>
 
-                <!-- Pilihan Kamera -->
-                <div class="mb-3 text-start">
+                <!-- Pilihan Kamera (Akan muncul otomatis jika kamera tersedia) -->
+                <div class="mb-3 text-start d-none" id="wrapper-camera-select">
                     <select id="camera-select" class="form-select form-select-sm"></select>
                 </div>
 
                 <!-- Kotak Kamera -->
                 <div id="reader" class="rounded-4 overflow-hidden border bg-dark mb-3" style="width: 100%; min-height: 280px;"></div>
 
-                <div id="status-kamera" class="small text-muted mb-3">Memuat kamera...</div>
+                <div id="status-kamera" class="small text-muted mb-2">Meminta izin & menyalakan kamera...</div>
 
-                <!-- Form Utama (Mengirim token_qr hasil scan kamera maupun upload gambar) -->
+                <!-- Tombol Paksa Nyalakan Kamera (Cadangan jika autoplay diblokir browser) -->
+                <button type="button" id="btn-paksa-kamera" class="btn btn-primary btn-sm rounded-pill px-4 mb-3 d-none">
+                    <i class="bi bi-camera-video-fill me-1"></i> Aktifkan Kamera Sekarang
+                </button>
+
+                <!-- Form Utama -->
                 <form id="form-scan-qr" action="{{ route('mahasiswa.absensi.store') }}" method="POST">
                     @csrf
                     <input type="hidden" name="token_qr" id="input-token-qr">
@@ -68,8 +73,10 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const html5QrCode = new Html5Qrcode("reader");
+    const wrapperSelect = document.getElementById('wrapper-camera-select');
     const cameraSelect = document.getElementById('camera-select');
     const statusText = document.getElementById('status-kamera');
+    const btnPaksaKamera = document.getElementById('btn-paksa-kamera');
     const formScan = document.getElementById('form-scan-qr');
     const inputToken = document.getElementById('input-token-qr');
 
@@ -79,6 +86,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let sudahTerbaca = false;
     let kameraAktif = false;
+
+    const qrConfig = {
+        fps: 15,
+        qrbox: { width: 240, height: 240 },
+        aspectRatio: 1.0
+    };
 
     function kirimTokenAbsensi(decodedText) {
         if (sudahTerbaca) return;
@@ -100,31 +113,95 @@ document.addEventListener('DOMContentLoaded', function () {
         kirimTokenAbsensi(decodedText);
     }
 
-    function jalankanKamera(cameraId) {
-        html5QrCode.start(
-            cameraId,
-            {
-                fps: 15,
-                qrbox: { width: 240, height: 240 },
-                aspectRatio: 1.0
-            },
-            onScanSuccess,
-            () => {}
-        ).then(() => {
-            kameraAktif = true;
-            statusText.innerText = 'Kamera aktif. Silakan arahkan ke QR Code.';
-        }).catch(() => {
-            kameraAktif = false;
-            statusText.innerHTML = '<span class="text-danger">Kamera tidak aktif. Gunakan upload gambar QR di bawah.</span>';
-        });
+    // Muat daftar kamera ke dropdown setelah izin kamera berhasil didapatkan
+    function muatDaftarKamera() {
+        Html5Qrcode.getCameras().then(devices => {
+            if (devices && devices.length > 1) {
+                cameraSelect.innerHTML = '';
+                devices.forEach((device, i) => {
+                    const opt = document.createElement('option');
+                    opt.value = device.id;
+                    opt.text = device.label || `Kamera ${i + 1}`;
+                    cameraSelect.appendChild(opt);
+                });
+
+                const kameraBelakang = devices.find(d =>
+                    d.label.toLowerCase().includes('back') ||
+                    d.label.toLowerCase().includes('rear') ||
+                    d.label.toLowerCase().includes('belakang') ||
+                    d.label.toLowerCase().includes('environment')
+                );
+                if (kameraBelakang) {
+                    cameraSelect.value = kameraBelakang.id;
+                }
+                wrapperSelect.classList.remove('d-none');
+            }
+        }).catch(() => {});
     }
+
+    // Fungsi utama: Paksa langsung buka kamera belakang tanpa menunggu getCameras()
+    async function paksaBukaKamera(cameraId = null) {
+        btnPaksaKamera.classList.add('d-none');
+        statusText.innerHTML = '<span class="text-primary">Menghubungkan ke kamera...</span>';
+
+        // Cek apakah halaman dibuka lewat HTTP biasa (non-localhost)
+        if (!window.isSecureContext) {
+            statusText.innerHTML = `
+                <span class="text-danger fw-bold d-block mb-1">Browser memblokir kamera karena alamat masih HTTP (${window.location.origin}).</span>
+                <span class="text-muted">Gunakan <b>HTTPS (Ngrok/Cloudflare)</b> atau aktifkan <code>chrome://flags/#unsafely-treat-insecure-origin-as-secure</code> di Chrome HP.</span>
+            `;
+            return;
+        }
+
+        const targetKamera = cameraId ? cameraId : { facingMode: "environment" };
+
+        try {
+            if (kameraAktif) {
+                await html5QrCode.stop();
+                kameraAktif = false;
+            }
+
+            await html5QrCode.start(targetKamera, qrConfig, onScanSuccess, () => {});
+            kameraAktif = true;
+            statusText.innerHTML = '<span class="text-success fw-semibold">Kamera aktif. Silakan arahkan ke QR Code.</span>';
+
+            if (!cameraId) {
+                muatDaftarKamera();
+            }
+        } catch (err1) {
+            // Fallback: Jika HP/Laptop tidak punya kamera belakang, paksa buka kamera depan ("user")
+            try {
+                await html5QrCode.start({ facingMode: "user" }, qrConfig, onScanSuccess, () => {});
+                kameraAktif = true;
+                statusText.innerHTML = '<span class="text-success fw-semibold">Kamera aktif. Silakan arahkan ke QR Code.</span>';
+                muatDaftarKamera();
+            } catch (err2) {
+                kameraAktif = false;
+                btnPaksaKamera.classList.remove('d-none');
+                statusText.innerHTML = '<span class="text-danger">Gagal akses kamera otomatis. Klik tombol di bawah atau izinkan kamera di pengaturan browser.</span>';
+            }
+        }
+    }
+
+    // Jalankan otomatis saat halaman selesai dimuat
+    paksaBukaKamera();
+
+    // Tombol manual jika browser membutuhkan interaksi klik pengguna
+    btnPaksaKamera.addEventListener('click', function () {
+        paksaBukaKamera();
+    });
+
+    // Ganti kamera dari dropdown
+    cameraSelect.addEventListener('change', function () {
+        paksaBukaKamera(this.value);
+    });
 
     // Helper: Resize gambar besar dari kamera HP agar decoder QR mudah membacanya
     function optimalkanGambarUntukScan(file) {
         return new Promise((resolve) => {
             const img = new Image();
             img.onload = function () {
-                const maxDim = 1000; // Batasi maksimal 1000px agar tajam tapi tidak terlalu berat
+                const maxDim = 1000;
                 let width = img.width;
                 let height = img.height;
 
@@ -163,7 +240,6 @@ document.addEventListener('DOMContentLoaded', function () {
         statusUpload.innerHTML = '<span class="text-primary"><i class="bi bi-hourglass-split me-1"></i>Membaca kode QR dari gambar...</span>';
 
         try {
-            // Hentikan kamera sementara karena html5QrCode tidak bisa scan kamera & file bersamaan
             if (kameraAktif) {
                 await html5QrCode.stop();
                 kameraAktif = false;
@@ -178,53 +254,7 @@ document.addEventListener('DOMContentLoaded', function () {
         } catch (err) {
             statusUpload.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Kode QR tidak ditemukan pada gambar. Pastikan gambar jelas, tidak buram, dan tidak terpotong.</span>';
             fileInput.value = '';
-
-            // Nyalakan kembali kamera jika sebelumnya aktif
-            if (cameraSelect.value) {
-                jalankanKamera(cameraSelect.value);
-            }
-        }
-    });
-
-    Html5Qrcode.getCameras().then(devices => {
-        if (devices && devices.length > 0) {
-            devices.forEach((device, i) => {
-                const opt = document.createElement('option');
-                opt.value = device.id;
-                opt.text = device.label || `Kamera ${i + 1}`;
-                cameraSelect.appendChild(opt);
-            });
-
-            const kameraBelakang = devices.find(d =>
-                d.label.toLowerCase().includes('back') ||
-                d.label.toLowerCase().includes('rear') ||
-                d.label.toLowerCase().includes('belakang') ||
-                d.label.toLowerCase().includes('environment')
-            );
-
-            if (kameraBelakang) {
-                cameraSelect.value = kameraBelakang.id;
-            } else if (devices.length > 1) {
-                cameraSelect.value = devices[devices.length - 1].id;
-            }
-
-            jalankanKamera(cameraSelect.value);
-        } else {
-            statusText.innerHTML = '<span class="text-danger">Kamera tidak ditemukan. Silakan unggah gambar QR di bawah.</span>';
-        }
-    }).catch(() => {
-        statusText.innerHTML = '<span class="text-danger">Akses kamera diblokir. Silakan unggah gambar QR di bawah.</span>';
-    });
-
-    cameraSelect.addEventListener('change', function () {
-        if (kameraAktif) {
-            html5QrCode.stop().then(() => {
-                jalankanKamera(this.value);
-            }).catch(() => {
-                jalankanKamera(this.value);
-            });
-        } else {
-            jalankanKamera(this.value);
+            paksaBukaKamera(cameraSelect.value || null);
         }
     });
 });

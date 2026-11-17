@@ -204,6 +204,7 @@ Route::middleware(['auth', 'role:dosen'])
         Route::resource('absensi', DosenAbsensiController::class);
         Route::patch('absensi/{id}/toggle-status', [DosenAbsensiController::class, 'toggleStatus'])->name('absensi.toggle');
         Route::patch('absensi/{id}/update-status', [DosenAbsensiController::class, 'toggleStatus'])->name('absensi.update-status');
+        Route::post('/absensi/{id}/refresh-token', [DosenAbsensiController::class, 'refreshToken'])->name('absensi.refresh_token');
         Route::post('/absensi/{sesi}/koreksi', [DosenAbsensiController::class, 'koreksiPresensi'])->name('absensi.koreksi');
 
         // 5. Surat Izin Mahasiswa

@@ -49,13 +49,20 @@ class AbsensiController extends Controller
         // Bersihkan karakter tak terlihat jika ada
         $tokenClean = preg_replace('/[^A-Za-z0-9\-]/', '', $token);
 
+        // 1. Cari sesi berdasarkan token aktif saat ini
         $sesi = SesiAbsensi::with('jadwal.mataKuliah')
             ->where('token_qr', $tokenClean)
             ->first();
 
+        // 2. Toleransi jeda 10 detik jika token baru saja berganti tepat saat mahasiswa melakukan scan
+        if (!$sesi && cache()->has('qr_prev_' . $tokenClean)) {
+            $sesiId = cache()->get('qr_prev_' . $tokenClean);
+            $sesi = SesiAbsensi::with('jadwal.mataKuliah')->find($sesiId);
+        }
+
         if (!$sesi) {
             return redirect()->route('mahasiswa.absensi.index')
-                ->with('error', 'QR Code tidak dikenali. (Terbaca: ' . $tokenClean . ')');
+                ->with('error', 'QR Code tidak dikenali atau sudah kedaluwarsa. Silakan arahkan kamera ke QR terbaru di layar dosen.');
         }
 
         if ($sesi->status !== 'buka') {

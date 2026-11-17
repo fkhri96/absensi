@@ -81,6 +81,35 @@ class AbsensiController extends Controller
         return view('dosen.absensi.show', compact('sesi'));
     }
 
+    public function refreshToken($id)
+    {
+        $sesi = SesiAbsensi::findOrFail($id);
+
+        if ($sesi->status !== 'buka') {
+            return response()->json([
+                'status'  => 'closed',
+                'message' => 'QR Code sedang dimatikan.'
+            ], 400);
+        }
+
+        // Simpan token sebelumnya ke cache selama 10 detik sebagai toleransi jeda scan jaringan
+        if ($sesi->token_qr) {
+            cache()->put('qr_prev_' . $sesi->token_qr, $sesi->id, now()->addSeconds(10));
+        }
+
+        $tokenBaru = 'ABSEN-' . strtoupper(Str::random(10));
+
+        $sesi->update([
+            'token_qr' => $tokenBaru,
+        ]);
+
+        return response()->json([
+            'status'       => 'ok',
+            'token'        => $tokenBaru,
+            'jumlah_hadir' => $sesi->absensis()->count(),
+        ]);
+    }
+
     public function toggleStatus($id)
     {
         $sesi = SesiAbsensi::findOrFail($id);
@@ -94,7 +123,10 @@ class AbsensiController extends Controller
                 ->where('status', 'buka')
                 ->update(['status' => 'tutup']);
 
-            $sesi->update(['status' => 'buka']);
+            $sesi->update([
+                'status'   => 'buka',
+                'token_qr' => 'ABSEN-' . strtoupper(Str::random(10)),
+            ]);
             $pesan = 'QR Code berhasil DIHIDUPKAN kembali. Mahasiswa sudah bisa scan absensi.';
         }
 
