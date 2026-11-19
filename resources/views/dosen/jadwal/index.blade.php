@@ -26,6 +26,7 @@
         font-size: 0.85rem;
     }
 </style>
+@include('partials.dark-fix')
 @endpush
 
 @section('content')

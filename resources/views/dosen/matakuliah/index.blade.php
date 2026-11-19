@@ -30,6 +30,7 @@
         letter-spacing: 0.03em;
     }
 </style>
+@include('partials.dark-fix')
 @endpush
 
 @section('content')

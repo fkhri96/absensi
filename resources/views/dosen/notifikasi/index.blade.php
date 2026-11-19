@@ -48,6 +48,7 @@
         box-shadow: 0 4px 12px rgba(47, 91, 234, 0.25);
     }
 </style>
+@include('partials.dark-fix')
 @endpush
 
 @section('content')
@@ -98,11 +99,11 @@
         @forelse($notifikasis as $item)
             @php
                 $badgeStyle = match($item->prioritas) {
-                    'warning' => 'bg-warning bg-opacity-15 text-warning',
-                    'success' => 'bg-success bg-opacity-15 text-success',
-                    'primary' => 'bg-primary bg-opacity-15 text-primary',
-                    'info'    => 'bg-info bg-opacity-15 text-info',
-                    default   => 'bg-secondary bg-opacity-10 text-secondary',
+                    'warning' => 'bg-warning bg-opacity-25 text-warning',
+                    'success' => 'bg-success bg-opacity-25 text-success',
+                    'primary' => 'bg-primary bg-opacity-25 text-primary',
+                    'info'    => 'bg-info bg-opacity-25 text-info',
+                    default   => 'bg-secondary bg-opacity-25 text-secondary',
                 };
             @endphp
 

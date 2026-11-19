@@ -53,6 +53,10 @@
     <i class="bi bi-qr-code"></i>
     <span>Buat QR Absensi</span>
 </a>
+<a href="{{ route('dosen.absensi.manual') }}"
+   class="nav-link {{ request()->routeIs('dosen.absensi.manual*') ? 'active' : '' }}">
+    <i class="bi bi-clipboard-check"></i> Kelola Absensi
+</a>
 <a class="nav-link {{ request()->routeIs('dosen.absensi.index', 'dosen.absensi.show') ? 'active' : '' }}" href="{{ route('dosen.absensi.index') }}">
     <i class="bi bi-clipboard2-check-fill"></i>
     <span>Kelola Absensi</span>

@@ -5,6 +5,15 @@
 @section('role', 'dosen')
 
 @section('content')
+@php
+    $pengaturan = \Illuminate\Support\Facades\Schema::hasTable('pengaturan_lokasis')
+        ? \App\Models\PengaturanLokasi::first()
+        : null;
+    $durasiDetik =$pengaturan->durasi_qr ?? 60;
+    $autoRefresh =$pengaturan->refresh_otomatis ?? true;
+    $urlScanLangsung = route('mahasiswa.absensi.scan_langsung', ['token' =>$sesi->token_qr ?? 'KOSONG']);
+@endphp
+
 <div class="container-fluid px-0">
     @if(session('success'))
         <div class="alert alert-success border-0 rounded-4 shadow-sm mb-4">
@@ -13,7 +22,7 @@
     @endif
 
     <div class="row g-4">
-        <!-- Kolom Kiri: Tampilan QR Code Dinamis -->
+        <!-- Kolom Kiri: Tampilan QR Code Super Tajam -->
         <div class="col-lg-5">
             <div class="panel p-4 shadow-sm text-center">
                 <span class="badge rounded-pill {{ $sesi->status === 'buka' ? 'bg-success' : 'bg-danger' }} px-3 py-2 mb-3">
@@ -21,23 +30,24 @@
                 </span>
 
                 <h5 class="fw-bold mb-1">{{ $sesi->jadwal->mataKuliah->nama_mk ?? 'Mata Kuliah' }}</h5>
-                <p class="text-muted small mb-3">Pertemuan Ke-{{ $sesi->pertemuan_ke }} • {{ $sesi->tanggal }}</p>
+                <p class="text-muted small mb-3">Pertemuan Ke-{{ $sesi->pertemuan_ke }} • {{$sesi->tanggal }}</p>
 
                 @if($sesi->status === 'buka')
-                    <div class="p-3 bg-white border rounded-4 d-inline-block shadow-sm mb-2">
-                        <div id="qrcode-container" class="d-flex justify-content-center align-items-center" style="width: 260px; height: 260px;">
-                            <div class="spinner-border text-primary" role="status" id="qr-loading">
-                                <span class="visually-hidden">Memuat QR...</span>
-                            </div>
-                        </div>
+                    <!-- Bingkai putih luas (p-4) wajib ada agar kamera HP langsung mengunci QR -->
+                    <div class="p-4 bg-white border border-2 rounded-4 d-inline-block shadow-sm mb-3">
+                        <img id="img-qr-dosen"
+                             src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&ecc=L&data={{ urlencode($urlScanLangsung) }}"
+                             alt="QR Code Presensi"
+                             style="width: 260px; height: 260px; display: block;">
                     </div>
 
-                    <!-- Indikator Countdown Pergantian Token -->
-                    <div class="mb-3">
-                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill">
-                            <i class="bi bi-arrow-repeat me-1"></i> QR berganti otomatis dalam <strong id="qr-countdown">15</strong> detik
-                        </span>
-                    </div>
+                    @if($autoRefresh)
+                        <div class="mb-3">
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill">
+                                <i class="bi bi-arrow-repeat me-1"></i> QR berganti dalam <strong id="qr-countdown">{{ $durasiDetik }}</strong> detik
+                            </span>
+                        </div>
+                    @endif
                 @else
                     <div class="p-5 bg-light border rounded-4 text-muted mb-3">
                         <i class="bi bi-qr-code display-1 opacity-25"></i>
@@ -46,8 +56,8 @@
                 @endif
 
                 <div class="bg-light rounded-3 p-2 mb-3">
-                    <small class="text-muted d-block">Kode Token Saat Ini:</small>
-                    <strong id="teks-token-manual" class="fs-5 text-primary user-select-all">{{ $sesi->token_qr ?? 'TOKEN KOSONG' }}</strong>
+                    <small class="text-muted d-block">Kode Token Manual:</small>
+                    <strong id="teks-token-manual" class="fs-4 text-primary user-select-all">{{ $sesi->token_qr ?? 'TOKEN KOSONG' }}</strong>
                 </div>
 
                 <div class="d-grid gap-2">
@@ -71,9 +81,14 @@
         <div class="col-lg-7">
             <div class="panel p-4 shadow-sm">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="fw-bold mb-0">Mahasiswa Hadir (<span id="jumlah-hadir">{{ $sesi->absensis->count() }}</span>)</h6>
+                    <div>
+                        <h6 class="fw-bold mb-0">Mahasiswa Hadir (<span id="jumlah-hadir">{{ $sesi->absensis->count() }}</span>)</h6>
+                        <small class="text-muted" style="font-size: 0.75rem;">
+                            <i class="bi bi-circle-fill text-success me-1" style="font-size: 0.5rem;"></i> Diperbarui otomatis setiap 4 detik
+                        </small>
+                    </div>
                     <button type="button" onclick="window.location.reload()" class="btn btn-sm btn-outline-primary">
-                        <i class="bi bi-arrow-clockwise me-1"></i> Refresh Data
+                        <i class="bi bi-arrow-clockwise me-1"></i> Refresh
                     </button>
                 </div>
 
@@ -88,8 +103,8 @@
                                 <th>Status</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            @forelse($sesi->absensis as $index => $absen)
+                        <tbody id="tbody-absensi">
+                            @forelse($sesi->absensis as $index =>$absen)
                                 <tr>
                                     <td>{{ $index + 1 }}</td>
                                     <td>{{ $absen->mahasiswa->nim ?? '-' }}</td>
@@ -113,80 +128,70 @@
 </div>
 
 @if($sesi->status === 'buka')
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const container = document.getElementById("qrcode-container");
-            const teksTokenManual = document.getElementById("teks-token-manual");
-            const countdownEl = document.getElementById("qr-countdown");
-            const jumlahHadirEl = document.getElementById("jumlah-hadir");
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const imgQr = document.getElementById("img-qr-dosen");
+    const teksTokenManual = document.getElementById("teks-token-manual");
+    const countdownEl = document.getElementById("qr-countdown");
+    const jumlahHadirEl = document.getElementById("jumlah-hadir");
 
-            const intervalDetik = 9000; // Ganti token setiap 15 detik
-            let sisaWaktu = intervalDetik;
-            let currentToken = "{{ $sesi->token_qr }}";
+    const baseUrlScan = "{{ url('/mahasiswa/absensi/scan-langsung') }}/";
+    const autoRefresh = {{ $autoRefresh ? 'true' : 'false' }};
+    const intervalDetik = {{ (int) $durasiDetik }};
+    let sisaWaktu = intervalDetik;
 
-            function renderQRCode(tokenText) {
-                container.innerHTML = ""; // Bersihkan QR lama
-                if (!tokenText) {
-                    container.innerHTML = '<small class="text-danger">Error: Token QR kosong.</small>';
-                    return;
+    function updateGambarQR(tokenBaru) {
+        if (!imgQr || !tokenBaru) return;
+        const fullUrl = baseUrlScan + encodeURIComponent(tokenBaru);
+        imgQr.src = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&ecc=L&data=" + encodeURIComponent(fullUrl);
+    }
+
+    async function mintaTokenBaru() {
+        try {
+            const response = await fetch("{{ route('dosen.absensi.refresh_token', $sesi->id) }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                    "Accept": "application/json"
                 }
-
-                if (typeof QRCode !== "undefined") {
-                    new QRCode(container, {
-                        text: tokenText,
-                        width: 260,
-                        height: 260,
-                        colorDark: "#000000",
-                        colorLight: "#ffffff",
-                        correctLevel: QRCode.CorrectLevel.H
-                    });
-                } else {
-                    container.innerHTML = `<img src="https://quickchart.io/qr?size=260&text=${encodeURIComponent(tokenText)}" alt="QR Code Absensi" class="img-fluid" style="width:260px; height:260px;">`;
-                }
+            });
+            if (!response.ok) return;
+            const data = await response.json();
+            if (data.status === "ok" && data.token) {
+                teksTokenManual.textContent = data.token;
+                updateGambarQR(data.token);
             }
+        } catch (err) {}
+    }
 
-            async function mintaTokenBaru() {
-                try {
-                    const response = await fetch("{{ route('dosen.absensi.refresh_token', $sesi->id) }}", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "X-CSRF-TOKEN": "{{ csrf_token() }}",
-                            "Accept": "application/json"
-                        }
-                    });
+    async function refreshDaftarHadir() {
+        try {
+            const res = await fetch(window.location.href, {
+                headers: { "X-Requested-With": "XMLHttpRequest" }
+            });
+            if (!res.ok) return;
+            const doc = new DOMParser().parseFromString(await res.text(), "text/html");
+            const newTbody = doc.getElementById("tbody-absensi");
+            const newJumlah = doc.getElementById("jumlah-hadir");
+            if (newTbody) document.getElementById("tbody-absensi").innerHTML = newTbody.innerHTML;
+            if (newJumlah && jumlahHadirEl) jumlahHadirEl.textContent = newJumlah.textContent;
+        } catch (e) {}
+    }
 
-                    if (!response.ok) return;
-
-                    const data = await response.json();
-                    if (data.status === "ok" && data.token) {
-                        currentToken = data.token;
-                        teksTokenManual.textContent = currentToken;
-                        renderQRCode(currentToken);
-
-                        if (jumlahHadirEl && data.jumlah_hadir !== undefined) {
-                            jumlahHadirEl.textContent = data.jumlah_hadir;
-                        }
-                    }
-                } catch (err) {
-                    console.error("Gagal memperbarui token QR:", err);
-                }
+    if (autoRefresh && countdownEl) {
+        setInterval(function() {
+            sisaWaktu--;
+            if (sisaWaktu <= 0) {
+                sisaWaktu = intervalDetik;
+                mintaTokenBaru();
             }
+            countdownEl.textContent = sisaWaktu;
+        }, 1000);
+    }
 
-            // Gambar QR pertama kali
-            renderQRCode(currentToken);
-
-            // Timer otomatis setiap 1 detik
-            setInterval(function() {
-                sisaWaktu--;
-                if (sisaWaktu <= 0) {
-                    sisaWaktu = intervalDetik;
-                    mintaTokenBaru();
-                }
-                countdownEl.textContent = sisaWaktu;
-            }, 1000);
-        });
-    </script>
+    setInterval(refreshDaftarHadir, 4000);
+});
+</script>
 @endif
 @endsection

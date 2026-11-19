@@ -542,6 +542,102 @@
         }
 
         /* ================================================================
+           DROPDOWN STATUS ABSENSI
+           ================================================================ */
+    /* ===== Dropdown status absensi (custom, bulat) ===== */
+    .sx {
+        position: relative;
+        display: inline-block;
+        min-width: 150px;
+    }
+
+    .sx-btn {
+        width: 100%;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 0 14px 0 18px;
+        border: 0;
+        border-radius: 999px;
+        font-size: .85rem;
+        font-weight: 700;
+        letter-spacing: .02em;
+        cursor: pointer;
+        background: rgba(148, 163, 184, .12);
+        color: #94a3b8;
+        box-shadow: inset 0 0 0 1.5px rgba(148, 163, 184, .4);
+        transition: transform .12s ease, box-shadow .2s ease, background-color .2s ease;
+    }
+    .sx-btn:hover  { transform: translateY(-1px); }
+    .sx-btn:active { transform: scale(.97); }
+    .sx-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(255, 255, 255, .35); }
+
+    .sx-chev {
+        width: 12px;
+        height: 12px;
+        flex: none;
+        transition: transform .2s ease;
+    }
+    .sx.open .sx-chev { transform: rotate(180deg); }
+
+    /* Warna per status */
+    .sx-btn[data-s="hadir"] { background: #10b981; color: #fff; box-shadow: 0 6px 18px rgba(16, 185, 129, .45); }
+    .sx-btn[data-s="izin"]  { background: #3b82f6; color: #fff; box-shadow: 0 6px 18px rgba(59, 130, 246, .45); }
+    .sx-btn[data-s="sakit"] { background: #fbbf24; color: #1c1400; box-shadow: 0 6px 18px rgba(251, 191, 36, .45); }
+    .sx-btn[data-s="alpha"] { background: #f43f5e; color: #fff; box-shadow: 0 6px 18px rgba(244, 63, 94, .45); }
+
+    /* Panel pilihan (di-posisikan lewat JS dengan position: fixed) */
+    .sx-menu {
+        position: fixed;
+        z-index: 1055;
+        display: none;
+        flex-direction: column;
+        gap: 4px;
+        padding: 6px;
+        border-radius: 18px;
+        background: #0f172a;
+        border: 1px solid rgba(255, 255, 255, .08);
+        box-shadow: 0 18px 40px rgba(0, 0, 0, .45);
+    }
+    .sx-menu.show { display: flex; }
+
+    .sx-opt {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 8px 14px;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: #e2e8f0;
+        font-size: .85rem;
+        font-weight: 600;
+        text-align: left;
+        cursor: pointer;
+        transition: background-color .15s ease;
+    }
+    .sx-opt:hover  { background: rgba(255, 255, 255, .08); }
+    .sx-opt.active { background: rgba(255, 255, 255, .14); }
+
+    .sx-opt .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        flex: none;
+    }
+    .sx-opt[data-s="kosong"] .dot { background: #94a3b8; }
+    .sx-opt[data-s="hadir"]  .dot { background: #10b981; }
+    .sx-opt[data-s="izin"]   .dot { background: #3b82f6; }
+    .sx-opt[data-s="sakit"]  .dot { background: #fbbf24; }
+    .sx-opt[data-s="alpha"]  .dot { background: #f43f5e; }
+
+    /* Input keterangan ikut melengkung */
+    .table .form-control-sm { border-radius: 999px; padding-left: 14px; }
+
+        /* ================================================================
            MOBILE
            ================================================================ */
         .sidebar-backdrop {
@@ -576,6 +672,7 @@
             .clock-pill { padding: 5px 12px 5px 10px; gap: 8px; }
             .clock-time { font-size: .92rem; }
             .clock-zone { display: none; }
+
         }
 
         @media (prefers-reduced-motion: reduce) {

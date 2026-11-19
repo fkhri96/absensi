@@ -3,66 +3,52 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\PengaturanLokasi;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class PengaturanQrController extends Controller
 {
     public function index()
     {
-        $setting = DB::table('pengaturan_qrs')->first();
-
-        if (!$setting) {
-            $id = DB::table('pengaturan_qrs')->insertGetId([
-                'durasi_detik'     => 60,
-                'refresh_otomatis' => true,
-                'validasi_lokasi'  => false,
-                'latitude'         => null,
-                'longitude'        => null,
-                'radius_meter'     => 100,
-                'created_at'       => now(),
-                'updated_at'       => now(),
-            ]);
-
-            $setting = DB::table('pengaturan_qrs')->find($id);
-        }
-
+        $setting = PengaturanLokasi::first();
         return view('admin.pengaturan-qr.index', compact('setting'));
-    }
-
-    public function store(Request $request)
-    {
-        return $this->update($request);
     }
 
     public function update(Request $request)
     {
-        $validated = $request->validate([
-            'durasi_detik' => 'required|integer|min:5|max:3600',
-            'latitude'     => 'nullable|string|max:50',
-            'longitude'    => 'nullable|string|max:50',
-            'radius_meter' => 'required|integer|min:10|max:5000',
+        $request->validate([
+            'durasi_qr'        => 'required|integer|min:10|max:7200',
+            'refresh_otomatis' => 'nullable|boolean',
+            'wajib_lokasi'     => 'nullable|boolean',
+            'latitude'         => 'nullable|numeric|between:-90,90',
+            'longitude'        => 'nullable|numeric|between:-180,180',
+            'radius_km'        => 'required|numeric|min:1|max:20',
         ]);
 
-        $data = [
-            'durasi_detik'     => (int) $validated['durasi_detik'],
-            'refresh_otomatis' => $request->has('refresh_otomatis'),
-            'validasi_lokasi'  => $request->has('validasi_lokasi'),
-            'latitude'         => $validated['latitude'] ?? null,
-            'longitude'        => $validated['longitude'] ?? null,
-            'radius_meter'     => (int) $validated['radius_meter'],
-            'updated_at'       => now(),
-        ];
-
-        $existing = DB::table('pengaturan_qrs')->first();
-
-        if ($existing) {
-            DB::table('pengaturan_qrs')->where('id', $existing->id)->update($data);
-        } else {
-            $data['created_at'] = now();
-            DB::table('pengaturan_qrs')->insert($data);
+        if ($request->boolean('wajib_lokasi') && (!$request->filled('latitude') || !$request->filled('longitude'))) {
+            return back()->withErrors([
+                'latitude' => 'Klik tombol "Gunakan Lokasi Terkini" terlebih dahulu sebelum mengaktifkan validasi lokasi.'
+            ]);
         }
 
-        return back()->with('success', 'Pengaturan QR Code berhasil disimpan ke database.');
+        // Konversi KM ke Meter sebelum disimpan ke database (contoh: 1 KM -> 1000 Meter, 1.2 KM -> 1200 Meter)
+        $radiusMeter = (int) round((float) $request->radius_km * 1000);
+
+        $data = [
+            'nama_lokasi'  => 'Kampus Utama',
+            'latitude'     => $request->latitude ?? 0,
+            'longitude'    => $request->longitude ?? 0,
+            'radius_meter' => $radiusMeter,
+            'wajib_gps'    => $request->boolean('wajib_lokasi'),
+        ];
+
+        $lokasi = PengaturanLokasi::first();
+        if ($lokasi) {
+            $lokasi->update($data);
+        } else {
+            PengaturanLokasi::create($data);
+        }
+
+        return back()->with('success', 'Pengaturan QR Code & Area Kampus (' . $request->radius_km . ' KM) berhasil disimpan!');
     }
 }

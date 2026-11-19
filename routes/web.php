@@ -31,8 +31,10 @@ use App\Http\Controllers\Admin\PengaturanSistemController as AdminPengaturanSist
 use App\Http\Controllers\Dosen\DashboardController as DosenDashboardController;
 use App\Http\Controllers\Dosen\AkademikController as DosenAkademikController;
 use App\Http\Controllers\Dosen\AbsensiController as DosenAbsensiController;
+use App\Http\Controllers\Dosen\AbsensiManualController as DosenAbsensiManualController;
 use App\Http\Controllers\Dosen\LaporanController as DosenLaporanController;
 use App\Http\Controllers\Dosen\IzinController as DosenIzinController;
+
 
 // ======================================================
 // CONTROLLER MAHASISWA
@@ -206,7 +208,10 @@ Route::middleware(['auth', 'role:dosen'])
         Route::patch('absensi/{id}/update-status', [DosenAbsensiController::class, 'toggleStatus'])->name('absensi.update-status');
         Route::post('/absensi/{id}/refresh-token', [DosenAbsensiController::class, 'refreshToken'])->name('absensi.refresh_token');
         Route::post('/absensi/{sesi}/koreksi', [DosenAbsensiController::class, 'koreksiPresensi'])->name('absensi.koreksi');
-
+        Route::get('/absensi-manual', [DosenAbsensiManualController::class, 'index'])->name('absensi.manual');
+        Route::post('/absensi-manual/sesi', [DosenAbsensiManualController::class, 'buatSesi'])->name('absensi.manual.buat');
+        Route::put('/absensi-manual/{sesi}', [DosenAbsensiManualController::class, 'simpan'])->name('absensi.manual.simpan');
+        Route::delete('/absensi-manual/{sesi}/{absensi}', [DosenAbsensiManualController::class, 'destroy'])->name('absensi.manual.hapus');
         // 5. Surat Izin Mahasiswa
         Route::get('/izin', [DosenIzinController::class, 'index'])->name('izin.index');
         Route::patch('/izin/{id}', [DosenIzinController::class, 'updateStatus'])->name('izin.update');
