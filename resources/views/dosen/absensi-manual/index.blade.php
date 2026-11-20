@@ -14,10 +14,6 @@
 
 @section('content')
 
-@if (session('success'))
-    <div class="alert alert-success">{{ session('success') }}</div>
-@endif
-
 {{-- ============ 1. BUAT PERTEMUAN ============ --}}
 <div class="card card-body mb-4">
     <h5 class="fw-bold mb-3">Buat Pertemuan Baru</h5>
@@ -148,9 +144,9 @@
                         </td>
                         <td class="text-end">
                             @if ($absen)
-                                <button type="submit" form="form-hapus-{{ $absen->id }}"
-                                        class="btn btn-sm btn-outline-secondary"
-                                        onclick="return confirm('Hapus catatan absensi ini?')">
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-danger"
+                                        onclick="hapusCatatanAbsensi('form-hapus-{{ $absen->id }}')">
                                     Hapus
                                 </button>
                             @else
@@ -263,6 +259,32 @@
     // Dipanggil tombol "Semua hadir"
     window.isiSemua = function (val) {
         semua.forEach(function (sx) { setNilai(sx, val); });
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'info',
+            title: 'Semua status diatur ke Hadir. Klik Simpan untuk menyimpan.',
+            showConfirmButton: false,
+            timer: 2500
+        });
+    };
+
+    // Konfirmasi SweetAlert2 saat menghapus catatan absensi mahasiswa
+    window.hapusCatatanAbsensi = function (formId) {
+        Swal.fire({
+            title: 'Hapus catatan absensi?',
+            text: 'Status kehadiran mahasiswa ini akan dikosongkan.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById(formId).submit();
+            }
+        });
     };
 })();
 </script>

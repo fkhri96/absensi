@@ -7,10 +7,6 @@
         <a href="{{ route('admin.jadwal.create') }}" class="btn btn-primary">+ Tambah Jadwal</a>
     </div>
 
-    @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
-
     <form action="{{ route('admin.jadwal.index') }}" method="GET" class="row g-2 mb-3">
         <div class="col-md-3">
             <select name="hari" class="form-select">
@@ -55,7 +51,7 @@
                 <td>{{ $jadwal->tahun_akademik }}</td>
                 <td>
                     <a href="{{ route('admin.jadwal.edit', $jadwal->id) }}" class="btn btn-sm btn-warning">Edit</a>
-                    <form action="{{ route('admin.jadwal.destroy', $jadwal->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus jadwal ini?')">
+                    <form action="{{ route('admin.jadwal.destroy', $jadwal->id) }}" method="POST" class="d-inline form-hapus">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="btn btn-sm btn-danger">Hapus</button>

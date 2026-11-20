@@ -82,6 +82,17 @@
 
         :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
+        /* SweetAlert2 Penyesuaian Mode Gelap */
+        [data-theme="dark"] .swal2-popup {
+            background-color: var(--surface) !important;
+            color: var(--text) !important;
+            border: 1px solid var(--line);
+        }
+        [data-theme="dark"] .swal2-title,
+        [data-theme="dark"] .swal2-html-container {
+            color: var(--text) !important;
+        }
+
         /* ---------- Kerangka dua kolom ---------- */
         .auth-shell { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-columns: 1fr; }
 
@@ -443,6 +454,9 @@
     </main>
 </div>
 
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <script>
     /* ---------- Tema ---------- */
     function updateThemeUI(theme) {
@@ -513,6 +527,36 @@
         }
         tick();
     })();
+
+    /* ---------- Notifikasi SweetAlert2 Auth ---------- */
+    @if(session('success'))
+        Swal.fire({
+            icon: 'success',
+            title: 'Berhasil!',
+            text: @json(session('success')),
+            timer: 3000,
+            timerProgressBar: true,
+            showConfirmButton: false
+        });
+    @endif
+
+    @if(session('error'))
+        Swal.fire({
+            icon: 'error',
+            title: 'Login Gagal!',
+            text: @json(session('error')),
+            confirmButtonText: 'Coba Lagi'
+        });
+    @endif
+
+    @if($errors->any())
+        Swal.fire({
+            icon: 'error',
+            title: 'Login Gagal!',
+            html: `{!! implode('<br>', $errors->all()) !!}`,
+            confirmButtonText: 'Coba Lagi'
+        });
+    @endif
 </script>
 </body>
 </html>

@@ -7,12 +7,6 @@
 @section('content')
 <div class="container-fluid px-0">
 
-    @if(session('success'))
-        <div class="alert alert-success border-0 rounded-4 shadow-sm mb-4">
-            <i class="bi bi-check-circle-fill me-1"></i> {{ session('success') }}
-        </div>
-    @endif
-
     <div class="panel p-4 shadow-sm">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
@@ -68,7 +62,7 @@
                             <td class="text-end">
                                 @if($izin->status == 'pending')
                                     <div class="d-inline-flex gap-1">
-                                        <form action="{{ route('dosen.izin.update', $izin->id) }}" method="POST">
+                                        <form action="{{ route('dosen.izin.update', $izin->id) }}" method="POST" class="form-izin-setuju">
                                             @csrf
                                             @method('PATCH')
                                             <input type="hidden" name="status" value="disetujui">
@@ -76,7 +70,7 @@
                                                 <i class="bi bi-check-lg"></i> Setujui
                                             </button>
                                         </form>
-                                        <form action="{{ route('dosen.izin.update', $izin->id) }}" method="POST">
+                                        <form action="{{ route('dosen.izin.update', $izin->id) }}" method="POST" class="form-izin-tolak">
                                             @csrf
                                             @method('PATCH')
                                             <input type="hidden" name="status" value="ditolak">
@@ -102,3 +96,43 @@
 
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('submit', function (e) {
+    const form = e.target;
+
+    if (form && form.classList.contains('form-izin-setuju')) {
+        e.preventDefault();
+        Swal.fire({
+            title: 'Setujui pengajuan izin?',
+            text: 'Status kehadiran mahasiswa akan dicatat sebagai izin/sakit.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#198754',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Setujui',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) form.submit();
+        });
+    }
+
+    if (form && form.classList.contains('form-izin-tolak')) {
+        e.preventDefault();
+        Swal.fire({
+            title: 'Tolak pengajuan izin?',
+            text: 'Pengajuan surat izin mahasiswa ini akan ditolak.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Tolak',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) form.submit();
+        });
+    }
+});
+</script>
+@endpush

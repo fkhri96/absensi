@@ -10,10 +10,6 @@
         </div>
     </div>
 
-    @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
-
     <table class="table table-bordered table-striped">
         <thead>
             <tr>
@@ -35,7 +31,7 @@
                 <td>{{ $prodi->kaprodi ?? '-' }}</td>
                 <td>
                     <a href="{{ route('admin.prodi.edit', $prodi->id) }}" class="btn btn-sm btn-warning">Edit</a>
-                    <form action="{{ route('admin.prodi.destroy', $prodi->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus prodi ini?')">
+                    <form action="{{ route('admin.prodi.destroy', $prodi->id) }}" method="POST" class="d-inline form-hapus">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="btn btn-sm btn-danger">Hapus</button>

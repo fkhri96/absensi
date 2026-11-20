@@ -44,19 +44,18 @@ class AuthController extends Controller
     {
         if (Auth::check()) {
             Auth::logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
+            $request->session()->invalidate();$request->session()->regenerateToken();
         }
     }
 
-    private function prosesLogin(Request $request, string $roleWajib, string $ruteTujuan)
+    private function prosesLogin(Request $request, string $roleWajib, string$ruteTujuan)
     {
-        $credentials = $request->validate([
+        $credentials =$request->validate([
             'email'    => 'required|email',
             'password' => 'required',
         ]);
 
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
+        if (Auth::attempt($credentials,$request->boolean('remember'))) {
             if (Auth::user()->role !== $roleWajib) {
                 Auth::logout();
                 return back()->withErrors([
@@ -65,7 +64,10 @@ class AuthController extends Controller
             }
 
             $request->session()->regenerate();
-            return redirect()->route($ruteTujuan);
+
+            $namaUser = Auth::user()->name;
+            return redirect()->route($ruteTujuan)
+                ->with('success', 'Berhasil login! Selamat datang kembali, ' . $namaUser . '.');
         }
 
         return back()->withErrors([
@@ -76,9 +78,9 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        $request->session()->invalidate();$request->session()->regenerateToken();
 
-        return redirect()->route('home');
+        return redirect()->route('home')
+            ->with('success', 'Anda telah berhasil logout dari sistem.');
     }
 }

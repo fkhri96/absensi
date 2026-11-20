@@ -10,10 +10,6 @@
         </div>
     </div>
 
-    @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
-
     <table class="table table-bordered table-striped">
         <thead>
             <tr>
@@ -33,7 +29,7 @@
                 <td><span class="badge bg-info">{{ $fak->prodis_count }} Prodi</span></td>
                 <td>
                     <a href="{{ route('admin.fakultas.edit', $fak->id) }}" class="btn btn-sm btn-warning">Edit</a>
-                    <form action="{{ route('admin.fakultas.destroy', $fak->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus fakultas ini?')">
+                    <form action="{{ route('admin.fakultas.destroy', $fak->id) }}" method="POST" class="d-inline form-hapus">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="btn btn-sm btn-danger">Hapus</button>

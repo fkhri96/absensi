@@ -7,10 +7,6 @@
         <a href="{{ route('admin.dosen.create') }}" class="btn btn-primary">+ Tambah Dosen</a>
     </div>
 
-    @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
-
     <form action="{{ route('admin.dosen.index') }}" method="GET" class="row g-2 mb-3">
         <div class="col-md-4">
             <input type="text" name="search" value="{{ request('search') }}" class="form-control" placeholder="Cari NIDN atau Nama Dosen...">
@@ -41,7 +37,7 @@
                 <td>{{ $dosen->jabatan_fungsional ?? '-' }}</td>
                 <td>
                     <a href="{{ route('admin.dosen.edit', $dosen->id) }}" class="btn btn-sm btn-warning">Edit</a>
-                    <form action="{{ route('admin.dosen.destroy', $dosen->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus dosen {{ $dosen->user->name }}?')">
+                    <form action="{{ route('admin.dosen.destroy', $dosen->id) }}" method="POST" class="d-inline form-hapus">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="btn btn-sm btn-danger">Hapus</button>

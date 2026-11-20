@@ -7,12 +7,6 @@
 @section('content')
 <div class="container-fluid px-0">
 
-    @if(session('success'))
-        <div class="alert alert-success border-0 rounded-4 shadow-sm mb-4">
-            <i class="bi bi-check-circle-fill me-1"></i> {{ session('success') }}
-        </div>
-    @endif
-
     <div class="panel p-4 shadow-sm">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
@@ -75,7 +69,7 @@
                                         @endif
                                     </form>
 
-                                    <form action="{{ route('dosen.absensi.destroy', $sesi->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus sesi absensi ini?')">
+                                    <form action="{{ route('dosen.absensi.destroy', $sesi->id) }}" method="POST" class="d-inline form-hapus">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-sm btn-danger" title="Hapus">

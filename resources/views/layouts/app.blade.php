@@ -101,10 +101,6 @@
             color: var(--text) !important;
         }
 
-        /* ---- FIX: angka/judul (mis. "Kelas Hari Ini = 0") tidak terlihat di mode gelap ----
-           Penyebab umum: warna angka di-hardcode navy (#0b2545 / var(--navy)) sehingga
-           menyatu dengan latar gelap. Aturan di bawah memaksa teks tersebut terang.
-           Elemen yang sengaja berwarna (class text-success, text-primary, dll) tidak diubah. */
         [data-theme="dark"] main.page :is(h1, h2, h3, h4, h5, h6, .display-font, .fw-bold, .fw-semibold, strong):not([class*="text-"]),
         [data-theme="dark"] main.page :is(.stat-value, .stat-number, .stat-num, .stat-count, .stat-card .value, .stat-card .number, .kpi, .kpi-value, .metric, .metric-value, .count, .counter, .angka):not([class*="text-"]) {
             color: var(--text);
@@ -178,6 +174,17 @@
         }
 
         [data-theme="dark"] .avatar-img { border-color: var(--surface); }
+
+        /* SweetAlert2 Penyesuaian Mode Gelap */
+        [data-theme="dark"] .swal2-popup {
+            background-color: var(--surface) !important;
+            color: var(--text) !important;
+            border: 1px solid var(--line);
+        }
+        [data-theme="dark"] .swal2-title,
+        [data-theme="dark"] .swal2-html-container {
+            color: var(--text) !important;
+        }
 
         /* ================================================================
            SIDEBAR
@@ -339,7 +346,6 @@
             transition: background-color .2s ease, border-color .2s ease;
         }
 
-        /* ---- Jam WIB (sinkron dengan waktu server, zona Asia/Jakarta) ---- */
         .clock-pill {
             display: inline-flex;
             align-items: center;
@@ -423,7 +429,6 @@
             color: var(--blue);
         }
 
-        /* Tombol profil di topbar */
         .user-trigger {
             display: inline-flex;
             align-items: center;
@@ -544,98 +549,94 @@
         /* ================================================================
            DROPDOWN STATUS ABSENSI
            ================================================================ */
-    /* ===== Dropdown status absensi (custom, bulat) ===== */
-    .sx {
-        position: relative;
-        display: inline-block;
-        min-width: 150px;
-    }
+        .sx {
+            position: relative;
+            display: inline-block;
+            min-width: 150px;
+        }
 
-    .sx-btn {
-        width: 100%;
-        height: 38px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        padding: 0 14px 0 18px;
-        border: 0;
-        border-radius: 999px;
-        font-size: .85rem;
-        font-weight: 700;
-        letter-spacing: .02em;
-        cursor: pointer;
-        background: rgba(148, 163, 184, .12);
-        color: #94a3b8;
-        box-shadow: inset 0 0 0 1.5px rgba(148, 163, 184, .4);
-        transition: transform .12s ease, box-shadow .2s ease, background-color .2s ease;
-    }
-    .sx-btn:hover  { transform: translateY(-1px); }
-    .sx-btn:active { transform: scale(.97); }
-    .sx-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(255, 255, 255, .35); }
+        .sx-btn {
+            width: 100%;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 0 14px 0 18px;
+            border: 0;
+            border-radius: 999px;
+            font-size: .85rem;
+            font-weight: 700;
+            letter-spacing: .02em;
+            cursor: pointer;
+            background: rgba(148, 163, 184, .12);
+            color: #94a3b8;
+            box-shadow: inset 0 0 0 1.5px rgba(148, 163, 184, .4);
+            transition: transform .12s ease, box-shadow .2s ease, background-color .2s ease;
+        }
+        .sx-btn:hover  { transform: translateY(-1px); }
+        .sx-btn:active { transform: scale(.97); }
+        .sx-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(255, 255, 255, .35); }
 
-    .sx-chev {
-        width: 12px;
-        height: 12px;
-        flex: none;
-        transition: transform .2s ease;
-    }
-    .sx.open .sx-chev { transform: rotate(180deg); }
+        .sx-chev {
+            width: 12px;
+            height: 12px;
+            flex: none;
+            transition: transform .2s ease;
+        }
+        .sx.open .sx-chev { transform: rotate(180deg); }
 
-    /* Warna per status */
-    .sx-btn[data-s="hadir"] { background: #10b981; color: #fff; box-shadow: 0 6px 18px rgba(16, 185, 129, .45); }
-    .sx-btn[data-s="izin"]  { background: #3b82f6; color: #fff; box-shadow: 0 6px 18px rgba(59, 130, 246, .45); }
-    .sx-btn[data-s="sakit"] { background: #fbbf24; color: #1c1400; box-shadow: 0 6px 18px rgba(251, 191, 36, .45); }
-    .sx-btn[data-s="alpha"] { background: #f43f5e; color: #fff; box-shadow: 0 6px 18px rgba(244, 63, 94, .45); }
+        .sx-btn[data-s="hadir"] { background: #10b981; color: #fff; box-shadow: 0 6px 18px rgba(16, 185, 129, .45); }
+        .sx-btn[data-s="izin"]  { background: #3b82f6; color: #fff; box-shadow: 0 6px 18px rgba(59, 130, 246, .45); }
+        .sx-btn[data-s="sakit"] { background: #fbbf24; color: #1c1400; box-shadow: 0 6px 18px rgba(251, 191, 36, .45); }
+        .sx-btn[data-s="alpha"] { background: #f43f5e; color: #fff; box-shadow: 0 6px 18px rgba(244, 63, 94, .45); }
 
-    /* Panel pilihan (di-posisikan lewat JS dengan position: fixed) */
-    .sx-menu {
-        position: fixed;
-        z-index: 1055;
-        display: none;
-        flex-direction: column;
-        gap: 4px;
-        padding: 6px;
-        border-radius: 18px;
-        background: #0f172a;
-        border: 1px solid rgba(255, 255, 255, .08);
-        box-shadow: 0 18px 40px rgba(0, 0, 0, .45);
-    }
-    .sx-menu.show { display: flex; }
+        .sx-menu {
+            position: fixed;
+            z-index: 1055;
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            padding: 6px;
+            border-radius: 18px;
+            background: #0f172a;
+            border: 1px solid rgba(255, 255, 255, .08);
+            box-shadow: 0 18px 40px rgba(0, 0, 0, .45);
+        }
+        .sx-menu.show { display: flex; }
 
-    .sx-opt {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        width: 100%;
-        padding: 8px 14px;
-        border: 0;
-        border-radius: 999px;
-        background: transparent;
-        color: #e2e8f0;
-        font-size: .85rem;
-        font-weight: 600;
-        text-align: left;
-        cursor: pointer;
-        transition: background-color .15s ease;
-    }
-    .sx-opt:hover  { background: rgba(255, 255, 255, .08); }
-    .sx-opt.active { background: rgba(255, 255, 255, .14); }
+        .sx-opt {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 8px 14px;
+            border: 0;
+            border-radius: 999px;
+            background: transparent;
+            color: #e2e8f0;
+            font-size: .85rem;
+            font-weight: 600;
+            text-align: left;
+            cursor: pointer;
+            transition: background-color .15s ease;
+        }
+        .sx-opt:hover  { background: rgba(255, 255, 255, .08); }
+        .sx-opt.active { background: rgba(255, 255, 255, .14); }
 
-    .sx-opt .dot {
-        width: 9px;
-        height: 9px;
-        border-radius: 50%;
-        flex: none;
-    }
-    .sx-opt[data-s="kosong"] .dot { background: #94a3b8; }
-    .sx-opt[data-s="hadir"]  .dot { background: #10b981; }
-    .sx-opt[data-s="izin"]   .dot { background: #3b82f6; }
-    .sx-opt[data-s="sakit"]  .dot { background: #fbbf24; }
-    .sx-opt[data-s="alpha"]  .dot { background: #f43f5e; }
+        .sx-opt .dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            flex: none;
+        }
+        .sx-opt[data-s="kosong"] .dot { background: #94a3b8; }
+        .sx-opt[data-s="hadir"]  .dot { background: #10b981; }
+        .sx-opt[data-s="izin"]   .dot { background: #3b82f6; }
+        .sx-opt[data-s="sakit"]  .dot { background: #fbbf24; }
+        .sx-opt[data-s="alpha"]  .dot { background: #f43f5e; }
 
-    /* Input keterangan ikut melengkung */
-    .table .form-control-sm { border-radius: 999px; padding-left: 14px; }
+        .table .form-control-sm { border-radius: 999px; padding-left: 14px; }
 
         /* ================================================================
            MOBILE
@@ -672,7 +673,6 @@
             .clock-pill { padding: 5px 12px 5px 10px; gap: 8px; }
             .clock-time { font-size: .92rem; }
             .clock-zone { display: none; }
-
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -689,7 +689,7 @@
     $authUser       = auth()->user();
     $userName       = $authUser->name ?? $roleLabel;
     $userFoto       = !empty($authUser->foto) ? asset('storage/' . $authUser->foto) : null;
-    $canEditProfile = true; // semua role (admin, dosen, mahasiswa) bisa edit profil
+    $canEditProfile = true;
     $profilUrl      = Route::has('profile.index') ? route('profile.index') : url('/profil');
 @endphp
 
@@ -742,7 +742,7 @@
                 </div>
             @endif
 
-            <form action="{{ route('logout') }}" method="POST" onsubmit="return confirm('Yakin ingin keluar dari sistem?')">
+            <form action="{{ route('logout') }}" method="POST" class="form-logout">
                 @csrf
                 <button type="submit" class="btn btn-danger btn-sm w-100 d-flex align-items-center justify-content-center gap-2 fw-semibold rounded-3">
                     <i class="bi bi-box-arrow-right"></i> Logout
@@ -763,7 +763,7 @@
             </div>
 
             <div class="d-flex align-items-center gap-2 gap-md-3">
-                <!-- Jam & Tanggal WIB (live, sinkron dengan waktu server) -->
+                <!-- Jam & Tanggal WIB -->
                 <div class="clock-pill" role="timer" aria-label="Waktu Indonesia Barat">
                     <span class="clock-dot" aria-hidden="true"></span>
                     <span class="clock-date d-none d-md-inline" id="wib-date">{{ now('Asia/Jakarta')->translatedFormat('l, d F Y') }}</span>
@@ -787,7 +787,7 @@
                 <!-- Dropdown Profil & Logout -->
                 <div class="dropdown">
                     <button class="user-trigger" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Menu Akun">
-                        @if($userFoto && $canEditProfile)
+                        @if($userFoto &&$canEditProfile)
                             <img src="{{ $userFoto }}" alt="Foto {{ $userName }}" class="avatar-img">
                         @else
                             <div class="avatar">
@@ -816,7 +816,7 @@
                             <li><hr class="dropdown-divider my-1"></li>
                         @endif
                         <li>
-                            <form action="{{ route('logout') }}" method="POST" onsubmit="return confirm('Yakin ingin keluar dari sistem?')">
+                            <form action="{{ route('logout') }}" method="POST" class="form-logout">
                                 @csrf
                                 <button type="submit" class="dropdown-item text-danger fw-semibold d-flex align-items-center gap-2">
                                     <i class="bi bi-box-arrow-right"></i>
@@ -835,6 +835,9 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <script>
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('open');
@@ -869,10 +872,7 @@
             updateThemeUI(document.documentElement.getAttribute('data-theme') || 'light');
         });
 
-        /* ---------- Jam WIB (Asia/Jakarta) ----------
-           Disinkronkan dengan waktu server: selisih (offset) antara jam server dan jam
-           perangkat dihitung sekali saat halaman dimuat, sehingga jam tetap akurat
-           walau jam di HP/laptop pengguna salah. */
+        /* ---------- Jam WIB (Asia/Jakarta) ---------- */
         (function () {
             const TZ = 'Asia/Jakarta';
             const serverNow = {{ (int) round(microtime(true) * 1000) }};
@@ -891,14 +891,90 @@
 
             function tick() {
                 const now = new Date(Date.now() + offset);
-                timeEl.textContent = timeFmt.format(now);        // 14:05:09
+                timeEl.textContent = timeFmt.format(now);
                 if (dateEl) dateEl.textContent = dateFmt.format(now);
-
-                // jadwalkan tepat di pergantian detik berikutnya
                 setTimeout(tick, 1000 - (now.getTime() % 1000) + 5);
             }
             tick();
         })();
+
+        /* ---------- Konfigurasi & Notifikasi SweetAlert2 ---------- */
+        // 1. Notifikasi Sukses dari Controller
+        @if(session('success'))
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: @json(session('success')),
+                timer: 3000,
+                timerProgressBar: true,
+                showConfirmButton: false
+            });
+        @endif
+
+        // 2. Notifikasi Error dari Controller
+        @if(session('error'))
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal!',
+                text: @json(session('error')),
+                confirmButtonColor: '#3b63f0',
+                confirmButtonText: 'Tutup'
+            });
+        @endif
+
+        // 3. Notifikasi Validasi Form ($errors)
+        @if($errors->any())
+            Swal.fire({
+                icon: 'warning',
+                title: 'Periksa Inputan!',
+                html: `{!! implode('<br>', $errors->all()) !!}`,
+                confirmButtonColor: '#3b63f0',
+                confirmButtonText: 'Mengerti'
+            });
+        @endif
+
+        // 4. Konfirmasi Global untuk Logout & Hapus Data (.form-hapus)
+        document.addEventListener('submit', function (e) {
+            const form = e.target;
+
+            // Konfirmasi Logout
+            if (form && form.classList.contains('form-logout')) {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Yakin ingin keluar?',
+                    text: 'Sesi Anda akan diakhiri dari sistem.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Ya, Logout',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            }
+
+            // Konfirmasi Hapus Data (tambahkan class="form-hapus" pada form delete)
+            if (form && form.classList.contains('form-hapus')) {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Yakin ingin menghapus?',
+                    text: 'Data yang sudah dihapus tidak dapat dikembalikan!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Ya, Hapus!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            }
+        });
     </script>
     @stack('scripts')
 </body>

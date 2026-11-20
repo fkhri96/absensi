@@ -95,6 +95,17 @@
         [data-theme="dark"] .dropdown-item:hover { background: var(--surface-2); }
         [data-theme="dark"] .dropdown-divider { border-color: var(--line); }
 
+        /* SweetAlert2 Penyesuaian Mode Gelap */
+        [data-theme="dark"] .swal2-popup {
+            background-color: var(--surface) !important;
+            color: var(--text) !important;
+            border: 1px solid var(--line);
+        }
+        [data-theme="dark"] .swal2-title,
+        [data-theme="dark"] .swal2-html-container {
+            color: var(--text) !important;
+        }
+
         /* ---------- Navbar ---------- */
         .navbar-custom {
             background: var(--nav-bg);
@@ -241,7 +252,6 @@
         }
         .feature-chip i { color: #6ee7b7; }
 
-
         .icon-box {
             width: 46px;
             height: 46px;
@@ -316,7 +326,6 @@
         [data-theme="dark"] .tone-sky   .stat-icon { background: rgba(56, 189, 248, 0.20); color: #7dd3fc; }
         [data-theme="dark"] .tone-amber .stat-icon { background: rgba(245, 158, 11, 0.20); color: #fbbf24; }
 
-        /* Angka selalu memakai var(--text) agar terlihat di mode gelap */
         .stat-number {
             font-family: 'Bricolage Grotesque', sans-serif;
             font-size: clamp(1.8rem, 1.2rem + 2vw, 2.4rem);
@@ -390,7 +399,7 @@
         .empty-state i { font-size: 2rem; display: block; margin-bottom: .4rem; }
         .empty-state .fw-semibold { color: var(--text); }
 
-        /* ---------- Alur penggunaan (urutan nyata, jadi memakai nomor) ---------- */
+        /* ---------- Alur penggunaan ---------- */
         .step-item { position: relative; padding-left: 3rem; padding-bottom: 1.4rem; }
         .step-item:last-child { padding-bottom: 0; }
         .step-item:not(:last-child)::before { content: ''; position: absolute; left: 15px; top: 34px; bottom: 4px; width: 2px; background: var(--line); }
@@ -405,7 +414,7 @@
         }
 
         @media (hover: hover) {
-                .btn-login-nav:hover { transform: translateY(-1px); }
+            .btn-login-nav:hover { transform: translateY(-1px); }
             .btn-dashboard-cta:hover { transform: translateY(-2px); }
         }
 
@@ -418,7 +427,7 @@
         }
 
         @media (max-width: 575.98px) {
-                .icon-box { width: 42px; height: 42px; font-size: 19px; }
+            .icon-box { width: 42px; height: 42px; font-size: 19px; }
             .clock-pill { padding: 5px 12px 5px 10px; gap: 8px; }
             .clock-time { font-size: .92rem; }
             .clock-zone { display: none; }
@@ -521,7 +530,6 @@
             .feature-card .feature-list { grid-column: 2; }
         }
 
-
         /* ---------- Konten lengkap: fitur, perbandingan, FAQ ---------- */
         .section-head { text-align: center; max-width: 40rem; margin: 0 auto 1.75rem; }
         .section-head p { color: var(--muted); margin-bottom: 0; }
@@ -542,8 +550,6 @@
         .compare-table td.col-old i { color: #ef4444; }
         .compare-table td.col-new i { color: var(--mint); }
 
-
-        /* Tabel perbandingan menjadi kartu bertumpuk di HP/tablet kecil agar tidak terpotong */
         @media (max-width: 767.98px) {
             .compare-wrap { border: 0; border-radius: 0; overflow: visible; }
             .compare-table { min-width: 0; }
@@ -569,8 +575,7 @@
         }
         .cta-band h2 { color: #fff; }
         .cta-band p { color: rgba(255, 255, 255, 0.76); max-width: 34rem; margin: 0 auto 1.25rem; }
-        .cta-band .mlb-btn { padding: 0 1.4rem; }
-        .cta-band .mlb-btn { min-height: 52px; color: #0b1a33; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18); }
+        .cta-band .mlb-btn { padding: 0 1.4rem; min-height: 52px; color: #0b1a33; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18); }
         @media (max-width: 575.98px) {
             .cta-band .d-grid { gap: .75rem !important; }
             .cta-band .mlb-btn { width: 100%; font-size: 1rem; }
@@ -619,7 +624,6 @@
         default     => url('/'),
     };
 
-    // Mendukung folder 'uploads/' maupun 'storage/' + cache-busting agar foto terbaru langsung terbaca
     $userAvatar = null;
     if (!empty($currentUser?->foto)) {
         $rawPath = str_starts_with($currentUser->foto, 'uploads/')
@@ -628,10 +632,7 @@
         $userAvatar = $rawPath . '?v=' . optional($currentUser->updated_at)->timestamp;
     }
 
-    // URL login admin (tombol rahasia di banner). Sesuaikan nama route / path jika berbeda.
     $adminLoginUrl = Route::has('admin.login') ? route('admin.login') : url('/admin/login');
-
-    // Waktu acuan: WIB (hanya untuk jam di navbar)
     $nowWib = now('Asia/Jakarta');
 @endphp
 
@@ -646,7 +647,7 @@
             </a>
 
             <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                <!-- Jam & tanggal WIB (live, sinkron waktu server) -->
+                <!-- Jam & tanggal WIB -->
                 <div class="clock-pill d-none d-sm-inline-flex" role="timer" aria-label="Waktu Indonesia Barat">
                     <span class="clock-dot" aria-hidden="true"></span>
                     <span class="clock-date d-none d-xl-inline" id="wib-date">{{ $nowWib->translatedFormat('l, d F Y') }}</span>
@@ -774,7 +775,7 @@
                                 <span>Masuk ke Dashboard {{ $roleTitle }}</span>
                             </a>
 
-                            <form action="{{ route('logout') }}" method="POST" class="d-grid" onsubmit="return confirm('Keluar dari akun {{ $roleTitle }}?')">
+                            <form action="{{ route('logout') }}" method="POST" class="d-grid form-logout">
                                 @csrf
                                 <button type="submit" class="btn btn-outline-light btn-lg rounded-4 px-4 fw-semibold" style="min-height:50px;">
                                     <i class="bi bi-box-arrow-right me-1"></i> Ganti Akun / Logout
@@ -1293,8 +1294,10 @@
         </div>
     </footer>
 
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             var b = document.getElementById('hero-login-btn');
@@ -1352,6 +1355,47 @@
             }
             tick();
         })();
+
+        /* ---------- SweetAlert2 Notifikasi & Konfirmasi Logout ---------- */
+        @if(session('success'))
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: @json(session('success')),
+                timer: 3000,
+                timerProgressBar: true,
+                showConfirmButton: false
+            });
+        @endif
+
+        @if(session('error'))
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal!',
+                text: @json(session('error')),
+                confirmButtonText: 'Tutup'
+            });
+        @endif
+
+        document.addEventListener('submit', function (e) {
+            if (e.target && e.target.classList.contains('form-logout')) {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Keluar dari akun?',
+                    text: 'Sesi Anda saat ini akan diakhiri.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Ya, Logout',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        e.target.submit();
+                    }
+                });
+            }
+        });
     </script>
 </body>
 </html>
